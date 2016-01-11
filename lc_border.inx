@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <_name>Border</_name>
+  <id>org.ekips.filter.lc_border</id>
+  <dependency type="executable" location="extensions">lc_border.py</dependency>
+  <dependency type="executable" location="extensions">inkex.py</dependency>
+  <param name="length" type="float" min="0.1" max="3000" _gui-text="length">10</param>
+  <param name="thickness" type="float" min="0.1" max="1000" _gui-text="plate thickness">3</param>
+  <param name="type" type="enum" _gui-text="Type">
+    <item value="m">Male</item>
+    <item value="f">Female</item>
+  </param>
+  <param name="split" type="int" min="1" max="1000" _gui-text="Number of parts">3</param>
+  <param name="unit" type="enum" _gui-text="Unit">
+    <item value="cm">cm</item>
+    <item value="mm">mm</item>
+    <item value="px">px</item>
+    <item value="pt">pt</item>
+    <item value="in">in</item>
+  </param>
+  
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu>
+       <submenu _name="Laser Cut"/>
+    </effects-menu>
+  </effect>
+  <script>
+    <command reldir="extensions" interpreter="python">lc_border.py</command>
+  </script>
+</inkscape-extension>
