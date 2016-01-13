@@ -15,21 +15,27 @@
     <item value="f">Female</item>
     <item value="-">Straight</item>
   </param>
+  
+  <param name="bottomshift" type="boolean" _gui-text="Bottom Shift">0</param>
+  
   <param name="right" type="enum" _gui-text="Right">
     <item value="m">Male</item>
     <item value="f">Female</item>
     <item value="-">Straight</item>
   </param>
+  <param name="rightshift" type="boolean" _gui-text="Right Shift">0</param>
   <param name="top" type="enum" _gui-text="Top">
     <item value="m">Male</item>
     <item value="f">Female</item>
     <item value="-">Straight</item>
   </param>
+  <param name="topshift" type="boolean" _gui-text="Top Shift">0</param>
   <param name="left" type="enum" _gui-text="Left">
     <item value="m">Male</item>
     <item value="f">Female</item>
     <item value="-">Straight</item>
   </param>
+  <param name="leftshift" type="boolean" _gui-text="Left Shift">0</param>
   <param name="wsplit" type="int" min="1" max="1000" _gui-text="Number of horizontale parts">3</param>
   <param name="hsplit" type="int" min="1" max="1000" _gui-text="Number of verticale parts">3</param>
   <param name="unit" type="enum" _gui-text="Unit">
