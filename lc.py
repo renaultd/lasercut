@@ -16,6 +16,7 @@ def make_plate(width,iwidth,height,iheight,thickness,wsplit,hsplit,bottom,bottom
     x=0
     y=0
     direction = 1
+    
     if bottom in "f":
         direction=-1
         y=thickness
@@ -23,23 +24,23 @@ def make_plate(width,iwidth,height,iheight,thickness,wsplit,hsplit,bottom,bottom
     if bottomshift:
         y+=thickness
     if leftshift:
-        x+=thickness
+        x-=thickness
 
     if bottom=='-':            
         points.append((x,y))
         x+=wsplit*wstep
         if leftshift:
-            x-=thickness
+            x+=thickness
         if rightshift:
-            x-=thickness
+            x+=thickness
         points.append((x,y))
     else:
         for i in range(wsplit):                 
             points.append((x,y))
             if i==0 and leftshift:   
-                x=x+wstep-thickness
+                x=x+wstep+thickness
             elif i==wsplit-1 and rightshift:
-                x=x+wstep-thickness
+                x=x+wstep+thickness
             else:
                 x=x+wstep
             points.append((x,y))
@@ -58,17 +59,17 @@ def make_plate(width,iwidth,height,iheight,thickness,wsplit,hsplit,bottom,bottom
         points.append((x,y))
         y=y-hstep*hsplit
         if bottomshift:
-            y+=thickness
+            y-=thickness
         if topshift:
-            y+=thickness
+            y-=thickness
         points.append((x,y))
     else:                
         for i in range(hsplit):
             points.append((x,y))
             if i==0 and bottomshift:
-                y=y-hstep+thickness
+                y=y-hstep-thickness
             elif i==hsplit-1 and topshift:
-                y=y-hstep+thickness
+                y=y-hstep-thickness
             else:
                 y=y-hstep
             points.append((x,y))
@@ -86,17 +87,17 @@ def make_plate(width,iwidth,height,iheight,thickness,wsplit,hsplit,bottom,bottom
         points.append((x,y))
         x=x-wstep*wsplit
         if rightshift:
-            x+=thickness
+            x-=thickness
         if leftshift:
-            x+=thickness
+            x-=thickness
         points.append((x,y))            
     else:
         for i in range(wsplit):
             points.append((x,y))
             if i==0 and rightshift:
-                x=x-wstep+thickness
+                x=x-wstep-thickness
             elif i==wsplit-1 and leftshift:
-                x=x-wstep+thickness
+                x=x-wstep-thickness
             else:
                 x=x-wstep
             points.append((x,y))
@@ -114,17 +115,17 @@ def make_plate(width,iwidth,height,iheight,thickness,wsplit,hsplit,bottom,bottom
         points.append((x,y))
         y=y+hstep*hsplit
         if topshift:
-            y-=thickness
+            y+=thickness
         if bottomshift:
-            y-=thickness
+            y+=thickness
         points.append((x,y))                
     else:
         for i in range(hsplit):
             points.append((x,y))
             if i==0 and topshift:
-                y=y+hstep-thickness
+                y=y+hstep+thickness
             elif i==hsplit-1 and bottomshift:
-                y=y+hstep-thickness
+                y=y+hstep+thickness
             else:
                 y=y+hstep
             points.append((x,y))

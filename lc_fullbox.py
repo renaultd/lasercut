@@ -110,7 +110,7 @@ class FullBoxEffect(inkex.Effect):
                              'f',False,
                              'f',False,
                              'm',False,
-                             'f',False)
+                             'f',True)
         points=lc.translate_points(points,0,height*1.1)
         path = lc.points_to_svgd(points)        
         
@@ -121,13 +121,13 @@ class FullBoxEffect(inkex.Effect):
             g, inkex.addNS('path', 'svg'), box_attribs)
         
         #make left plate:
-        points=lc.make_plate(depth,self.options.inner,height,self.options.inner,
-                             thickness,self.options.dsplit,self.options.hsplit,
+        points=lc.make_plate(height,self.options.inner,depth,self.options.inner,
+                             thickness,self.options.hsplit,self.options.dsplit,
+                             'f',True,
                              'm',False,
                              'f',False,
-                             'f',False,
                              'f',False)
-        points=lc.translate_points(points,-(depth*1.1),0)
+        points=lc.translate_points(points,-(height*1.1),0)
         path = lc.points_to_svgd(points)        
         
         box_attribs = {
@@ -137,10 +137,10 @@ class FullBoxEffect(inkex.Effect):
             g, inkex.addNS('path', 'svg'), box_attribs)
         
         #make right plate:
-        points=lc.make_plate(depth,self.options.inner,height,self.options.inner,
+        points=lc.make_plate(height,self.options.inner,depth,self.options.inner,
                              thickness,self.options.dsplit,self.options.hsplit,
                              'm',False,
-                             'f',False,
+                             'f',True,
                              'f',False,
                              'f',False)
         points=lc.translate_points(points,width*1.1,0)
