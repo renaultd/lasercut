@@ -93,7 +93,7 @@ class FullBoxEffect(inkex.Effect):
                              thickness,self.options.wsplit,self.options.hsplit,
                              'f',False,
                              'f',False,
-                             'f',False,
+                             'f',True,
                              'm',False)
         points=lc.translate_points(points,0,-(depth*1.1))
         path = lc.points_to_svgd(points)        
