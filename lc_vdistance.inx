@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <_name>Vertical Distance</_name>
+  <id>org.ekips.filter.lc_vdistance</id>
+  <dependency type="executable" location="extensions">lc_vdistance.py</dependency>
+  <dependency type="executable" location="extensions">inkex.py</dependency>
+
+  <param name="distance" type="float" min="-3000" max="3000" _gui-text="distance">10</param>
+
+  <param name="moving" type="enum" _gui-text="Moving Element">
+    <item value="t">Top</item>
+    <item value="b">Bottom</item>
+  </param>
+  
+  <param name="top" type="enum" _gui-text="Top Element Reference">
+    <item value="t">Top</item>
+    <item value="b">Bottom</item>
+  </param>
+  
+  <param name="bottom" type="enum" _gui-text="Bottom Element Reference">
+    <item value="t">Top</item>
+    <item value="b">Bottom</item>
+  </param>
+  
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu>
+       <submenu _name="Laser Cut"/>
+    </effects-menu>
+  </effect>
+  <script>
+    <command reldir="extensions" interpreter="python">lc_vdistance.py</command>
+  </script>
+</inkscape-extension>

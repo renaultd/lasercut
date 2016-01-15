@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <_name>Horizontal Distance</_name>
+  <id>org.ekips.filter.lc_hdistance</id>
+  <dependency type="executable" location="extensions">lc_hdistance.py</dependency>
+  <dependency type="executable" location="extensions">inkex.py</dependency>
+
+  <param name="distance" type="float" min="-3000" max="3000" _gui-text="distance">10</param>
+
+  <param name="moving" type="enum" _gui-text="Moving Element">
+    <item value="l">left</item>
+    <item value="r">right</item>
+  </param>
+  
+  <param name="left" type="enum" _gui-text="Left Element Reference">
+    <item value="l">left</item>
+    <item value="r">right</item>
+  </param>
+  
+  <param name="right" type="enum" _gui-text="Right Element Reference">
+    <item value="l">left</item>
+    <item value="r">right</item>
+  </param>
+  
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu>
+       <submenu _name="Laser Cut"/>
+    </effects-menu>
+  </effect>
+  <script>
+    <command reldir="extensions" interpreter="python">lc_hdistance.py</command>
+  </script>
+</inkscape-extension>
