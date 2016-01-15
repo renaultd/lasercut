@@ -21,7 +21,7 @@ First, get a copie of the repository with, for example:
 git clone https://github.com/allali/lasercut.git
 ```
 
-Then, find the location of your extension directory: In inkscape, go to *edit* -> *preferences* -> *system*. Copy *lc_box.py* *lc_box.inx* *lc_border.py* *lc_border.inx* to the *"User extensions"* directory.
+Then, find the location of your extension directory: In inkscape, go to *edit* -> *preferences* -> *system*. Copy **.py* **.inx* to the *"User extensions"* directory.
 
 # Usage
 
