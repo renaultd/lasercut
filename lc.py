@@ -10,6 +10,7 @@ def make_plate(width,iwidth,height,iheight,thickness,wsplit,hsplit,bottom,bottom
     if iheight==False:
         height-=thickness*2
 
+
     wstep=width/wsplit
     hstep=height/hsplit        
     points= []

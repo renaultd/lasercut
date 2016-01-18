@@ -78,7 +78,7 @@ class FullBoxEffect(inkex.Effect):
                              'm',False,
                              'm',False)
 
-        points=lc.translate_points(points,width*1.1,depth*1.1)              
+        points=lc.translate_points(points,width+2*thickness,depth+2*thickness)              
         path = lc.points_to_svgd(points)  
 
         
@@ -91,11 +91,11 @@ class FullBoxEffect(inkex.Effect):
         #make back plate:
         points=lc.make_plate(width,self.options.inner,height,self.options.inner,
                              thickness,self.options.wsplit,self.options.hsplit,
-                             'f',False,
-                             'f',False,
+                             'f',True,
+                             'f',True,
                              'f',True,
                              'm',False)
-        points=lc.translate_points(points,0,-(depth*1.1))
+        points=lc.translate_points(points,0,-(depth+2*thickness))
         path = lc.points_to_svgd(points)        
         
         box_attribs = {
@@ -107,11 +107,11 @@ class FullBoxEffect(inkex.Effect):
         #make front plate:
         points=lc.make_plate(width,self.options.inner,height,self.options.inner,
                              thickness,self.options.wsplit,self.options.hsplit,
-                             'f',False,
-                             'f',False,
+                             'f',True,
+                             'f',True,
                              'm',False,
                              'f',True)
-        points=lc.translate_points(points,0,height*1.1)
+        points=lc.translate_points(points,0,height)
         path = lc.points_to_svgd(points)        
         
         box_attribs = {
@@ -125,9 +125,9 @@ class FullBoxEffect(inkex.Effect):
                              thickness,self.options.hsplit,self.options.dsplit,
                              'f',True,
                              'm',False,
-                             'f',False,
-                             'f',False)
-        points=lc.translate_points(points,-(height*1.1),0)
+                             'f',True,
+                             'f',True)
+        points=lc.translate_points(points,-(height)-thickness,-thickness)
         path = lc.points_to_svgd(points)        
         
         box_attribs = {
@@ -141,9 +141,9 @@ class FullBoxEffect(inkex.Effect):
                              thickness,self.options.dsplit,self.options.hsplit,
                              'm',False,
                              'f',True,
-                             'f',False,
-                             'f',False)
-        points=lc.translate_points(points,width*1.1,0)
+                             'f',True,
+                             'f',True)
+        points=lc.translate_points(points,width+thickness,0)
         path = lc.points_to_svgd(points)        
         
         box_attribs = {
