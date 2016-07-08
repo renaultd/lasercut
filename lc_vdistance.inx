@@ -22,6 +22,14 @@
     <item value="b">Bottom</item>
   </param>
   
+  <param name="unit" type="enum" _gui-text="Unit">
+    <item value="cm">cm</item>
+    <item value="mm">mm</item>
+    <item value="px">px</item>
+    <item value="pt">pt</item>
+    <item value="in">in</item>
+  </param>
+  
   <effect>
     <object-type>all</object-type>
     <effects-menu>

@@ -26,8 +26,11 @@ class VDistanceEffect(inkex.Effect):
         self.OptionParser.add_option('--bottom', action = 'store',
           type = 'string', dest = 'bottom', default = 't',
           help = 'bottom')
+        self.OptionParser.add_option('--unit', action = 'store',
+          type = 'string', dest = 'unit', default = 'mm',
+          help = 'unit')        
     def effect(self):
-        distance=self.unittouu(str(self.options.distance)+self.getDocumentUnit())
+        distance=self.unittouu(str(self.options.distance)+self.options.unit)
         if len(self.options.ids)!=2:
             print >>sys.stderr,"you must select exactly two objects"
             return

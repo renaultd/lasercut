@@ -138,7 +138,7 @@ class FullBoxEffect(inkex.Effect):
         
         #make right plate:
         points=lc.make_plate(height,self.options.inner,depth,self.options.inner,
-                             thickness,self.options.dsplit,self.options.hsplit,
+                             thickness,self.options.hsplit,self.options.dsplit,
                              'm',False,
                              'f',True,
                              'f',True,

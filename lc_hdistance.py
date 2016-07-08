@@ -18,16 +18,19 @@ class HDistanceEffect(inkex.Effect):
           type = 'float', dest = 'distance', default = '10',
           help = 'distance')
         self.OptionParser.add_option('--moving', action = 'store',
-          type = 'string', dest = 'moving', default = '10',
+          type = 'string', dest = 'moving', default = 'right',
           help = 'moving')
         self.OptionParser.add_option('--left', action = 'store',
-          type = 'string', dest = 'left', default = '10',
+          type = 'string', dest = 'left', default = 'right',
           help = 'left')
         self.OptionParser.add_option('--right', action = 'store',
-          type = 'string', dest = 'right', default = '10',
+          type = 'string', dest = 'right', default = 'right',
           help = 'right')
+        self.OptionParser.add_option('--unit', action = 'store',
+          type = 'string', dest = 'unit', default = 'mm',
+          help = 'unit')        
     def effect(self):
-        distance=self.unittouu(str(self.options.distance)+self.getDocumentUnit())
+        distance=self.unittouu(str(self.options.distance)+self.options.unit)
         if len(self.options.ids)!=2:
             print >>sys.stderr,"you must select exactly two objects"
             return
