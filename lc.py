@@ -47,6 +47,7 @@ def make_plate(dims, idims,\
     if leftshift:
         x-=thickness
 
+    # Draw bottom part
     if bottom=='-':
         points.append((x,y))
         x+=wsplit*wstep
@@ -65,13 +66,20 @@ def make_plate(dims, idims,\
             else:
                 x=x+wstep
             points.append((x,y))
-            y=y+direction*thickness
+            if ((bottom != 'w') and (bottom != 'x')) or \
+               ((bottom == 'w') and ((i/2)%2 == 0)) or \
+               ((bottom == 'x') and ((i/2)%2 == 1)):
+                y=y+direction*thickness
             direction*=-1
-        y=y+direction*thickness
-
-    if right == bottom:
+        if ((bottom != 'w') and (bottom != 'x')) or \
+           ((bottom == 'x') and (wsplit % 4 == 3)) or \
+           ((bottom == 'w') and (wsplit % 4 == 1)):
+            y=y+direction*thickness
+    if (right == bottom):
         direction*=-1
-    if bottom=='-':
+
+    # Draw right part
+    if (bottom=='-'):
         if right=='f':
             direction=-1
         else:
@@ -104,6 +112,8 @@ def make_plate(dims, idims,\
             direction=-1
         else:
             direction=1
+
+    # Draw top part
     if top == '-':
         points.append((x,y))
         x=x-wstep*wsplit
@@ -122,11 +132,16 @@ def make_plate(dims, idims,\
             else:
                 x=x-wstep
             points.append((x,y))
-            y=y+direction*thickness
+            if ((top != 'w') and (top != 'x')) or \
+               ((top == 'w') and ((i/2)%2 == (1-(wsplit/2)%2))) or \
+               ((top == 'x') and ((i/2)%2 == ((wsplit/2)%2))):
+                y=y+direction*thickness
             direction*=-1
         y=y+direction*thickness
     if left == top:
         direction*=-1
+
+    # Draw left part
     if top=='-':
         if left=='m':
             direction=-1
@@ -173,16 +188,6 @@ def points_to_svgd(ps):
     return svgd
 
 ################################################################
-# Insert a path into the SVG elem
-def insert_path(elem, ps, style):
-    path = points_to_svgd(ps)
-    box_attribs = {
-        'style': style,
-        'd': path}
-    box = inkex.etree.SubElement(
-        elem, inkex.addNS('path', 'svg'), box_attribs)
-
-################################################################
 # Insert a circular point into the SVG elem
 def insert_point(elem, p, style):
     path = points_to_svgd([(p[0]+5,p[1]+5),
@@ -195,7 +200,19 @@ def insert_point(elem, p, style):
         'd': path}
     box = inkex.etree.SubElement(
         elem, inkex.addNS('path', 'svg'), box_attribs)
-    
+
+################################################################
+# Insert a path into the SVG elem
+def insert_path(elem, ps, style):
+    path = points_to_svgd(ps)
+    box_attribs = {
+        'style': style,
+        'd': path}
+    # for p in ps:
+    #     insert_point(elem, p, style)
+    box = inkex.etree.SubElement(
+        elem, inkex.addNS('path', 'svg'), box_attribs)
+
 ################################################################
 # Insert a full box into the SVG elem
 def insert_box(elem, dims, splits, thickness, innerDim, closeBox, style):
@@ -284,7 +301,7 @@ def insert_box(elem, dims, splits, thickness, innerDim, closeBox, style):
 
 ################################################################
 # Insert holes
-# 
+#
 # dx  : width of the holes
 # dy  : thickness of the holes
 # dir : 'n', 's', 'e', 'w'
@@ -295,7 +312,7 @@ def insert_holes(elem, (x,y), (dx,dy),
                 (x+dx/2,y+dy/2),(x-dx/2,y+dy/2),
                 (x-dx/2,y-dy/2)]
         insert_path(elem, points, style)
-        if dir == 'n': 
+        if dir == 'n':
             y += dy*2
         elif dir == 's':
             y -= dy*2
@@ -331,7 +348,7 @@ class Edge:
         self.touch.append((e, d))
     def attach(self, p):
         self.attch.append(p)
-    
+
     def position(self, p, dir):
         self.r_from = p
         self.dir = dir
@@ -345,7 +362,7 @@ class Edge:
             self.r_to = (self.r_from[0]-self.getlen(), self.r_from[1])
         else:
             raise Exception("lc.edge.position : Impossible direction (" + str(dir) + ")")
-        
+
     # Test if a point belongs to an edge
     def belongs(self, p):
         v1 = [p[0]-self.p_from[0],p[1]-self.p_from[1]]
@@ -386,7 +403,7 @@ class Edge:
         n = (self.p_from[0]-self.p_to[0])**2 + \
             (self.p_from[1]-self.p_to[1])**2
         return (n**0.5)
-    
+
     def __str__(self):
         st = "Edge from " + str(self.p_from) + " to " + str(self.p_to)
         if self.r_from:
@@ -396,7 +413,7 @@ class Edge:
         if len(self.attch) > 0:
             st += ", attach [" + ", ".join(map(str, self.attch)) + "]"
         return st
-    
+
     def str_short(self):
         st = "Edge from " + str(self.p_from) + " to " + str(self.p_to)
         st += ")"

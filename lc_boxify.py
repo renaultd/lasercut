@@ -86,19 +86,19 @@ class BoxifyEffect(inkex.Effect):
         # Handle remaining edges
         numedges = 0
         for e in edges:
-            inkex.debug("==========================")
-            inkex.debug(str(e) + "\n")
+            # inkex.debug("==========================")
+            # inkex.debug(str(e) + "\n")
             numedges += 1
 
             # Determine edge direction in the main plate
             dir = e.getdir()
-            
+
             # Middle holes
             leng = e.getlen()
             for (f,df) in e.touch:
                 if not(f.bnd):
                     leng += thickness/2
-             
+
             num  = int((leng-2*thickness)/(2*thickness))
 
             if (dir == 's') or (dir == 'n'): # Vertical edge
@@ -121,7 +121,7 @@ class BoxifyEffect(inkex.Effect):
                           e.p_from[1]-ymax+thickness)
                 else:
                     st = (e.p_from[0]-xmin-2*thickness-dims[0]/2,
-                          e.p_from[1]-ymax+thickness)                    
+                          e.p_from[1]-ymax+thickness)
                 if not((abs(e.p_from[0]-xmin) < 0.1) or
                        (abs(e.p_from[0]-xmax) < 0.1)): # Is the start point on the border ?
                     if (dir == 'e'):
@@ -134,8 +134,8 @@ class BoxifyEffect(inkex.Effect):
             vdivs = max(int((height-iheight)/(2*thickness))-1,1)
             points=lc.make_plate((height-thickness-iheight,leng),(True,False),
                               thickness,vdivs,num,
-                              'm',False,
-                              'm',False,
+                              'x',False,
+                              'w',False,
                               '-',False,
                               'f',True)
             (dpx,dpy) = (xmax-xmin-2*thickness+numedges*(height-iheight)+iheight,0)
@@ -143,7 +143,7 @@ class BoxifyEffect(inkex.Effect):
             lc.insert_path(g, points, style)
             e.position((xmax-xmin+(height-iheight)*(numedges+1)+iheight-2*thickness,
                         thickness), 'n')
-            
+
             # Left parts
             for (f,df) in e.touch:
                 # inkex.debug("Touch " + str(f) + " -- DIST= " + str(df) + "\n")
