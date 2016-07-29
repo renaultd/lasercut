@@ -131,11 +131,17 @@ class BoxifyEffect(inkex.Effect):
 
             lc.insert_holes(g, st, dims, num+1, dir, style)
 
+            # Do we need to split the joins of the edge ?
+            tm_from = 0; tm_to = 0
+            for (f,df) in e.touch:
+                tm_from += len(filter ((lambda q: ((q[0]-e.p_from[0])**2+(q[1]-e.p_from[1]))**2 < 0.1), f.attch))
+                tm_to   += len(filter ((lambda q: ((q[0]-e.p_to[0])**2+(q[1]-e.p_to[1]))**2 < 0.1), f.attch))
+
             vdivs = max(int((height-iheight)/(2*thickness))-1,1)
             points=lc.make_plate((height-thickness-iheight,leng),(True,False),
                               thickness,vdivs,num,
-                              'x',False,
-                              'w',False,
+                              'm',False,
+                              'm' if tm_from <= 1 else ('x' if (e.getdir() == 'w') or (e.getdir() == 'n') else 'w'),False,
                               '-',False,
                               'f',True)
             (dpx,dpy) = (xmax-xmin-2*thickness+numedges*(height-iheight)+iheight,0)
