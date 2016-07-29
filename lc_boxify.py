@@ -140,7 +140,7 @@ class BoxifyEffect(inkex.Effect):
             vdivs = max(int((height-iheight)/(2*thickness))-1,1)
             points=lc.make_plate((height-thickness-iheight,leng),(True,False),
                               thickness,vdivs,num,
-                              'm',False,
+                              'm' if tm_to   <= 1 else ('x' if (e.getdir() == 'w') or (e.getdir() == 'n') else 'w'),False,
                               'm' if tm_from <= 1 else ('x' if (e.getdir() == 'w') or (e.getdir() == 'n') else 'w'),False,
                               '-',False,
                               'f',True)
