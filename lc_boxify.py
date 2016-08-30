@@ -88,6 +88,9 @@ class BoxifyEffect(inkex.Effect):
         for e in edges:
             # inkex.debug("==========================")
             # inkex.debug(str(e) + "\n")
+            # style = formatStyle({ 'stroke': "#%06x" % random.randint(0, 0xFFFFFF), \
+            #                       'fill': 'none', \
+            #                       'stroke-width': str(self.unittouu('3px')) })
             numedges += 1
 
             # Determine edge direction in the main plate
@@ -105,7 +108,7 @@ class BoxifyEffect(inkex.Effect):
                 dims = (thickness,(leng-2*thickness)/(2*num+1))
                 if (dir == 's'):
                     st = (e.p_from[0]-xmin-thickness,
-                          e.p_from[1]-ymax-dims[1]/2)
+                          e.p_from[1]-ymax-dims[1]/2+thickness)
                 else:
                     st = (e.p_from[0]-xmin-thickness,
                           e.p_from[1]-ymax+2*thickness+dims[1]/2)
