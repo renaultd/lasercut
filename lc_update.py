@@ -7,6 +7,7 @@ import inkex
 import urllib
 import json
 import os
+from lc_version import __version__
 
 class UpdateEffect(inkex.Effect):
     def __init__(self):
@@ -19,6 +20,7 @@ class UpdateEffect(inkex.Effect):
                            "renaultd/lasercut/git/refs/heads/master")
         j = json.load(f)
         inkex.debug("Most recent SHA : " + j["object"]["sha"])
+        inkex.debug("Current version : " + str(__version__))
 
 effect = UpdateEffect()
 effect.affect()
