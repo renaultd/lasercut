@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <_name>Stars</_name>
+  <id>org.ekips.filter.lc_stars</id>
+  <dependency type="executable" location="extensions">lc_stars.py</dependency>
+  <dependency type="executable" location="extensions">inkex.py</dependency>
+
+  <param name="width" type="int" min="1" max="1000"
+	 _gui-text="Width">5</param>
+  <param name="height" type="int" min="1" max="1000"
+	 _gui-text="Height">5</param>
+  <param name="minsides" type="int" min="3" max="20"
+	 _gui-text="Minimum number of sides">5</param>
+  <param name="maxsides" type="int" min="3" max="20"
+	 _gui-text="Maximum number of sides">5</param>
+  <param name="radius" type="float" min="0.1" max="1000"
+	 _gui-text="Radius">5</param>
+  <param name="unit" type="enum" _gui-text="Unit">
+    <item value="cm">cm</item>
+    <item value="mm">mm</item>
+    <item value="px">px</item>
+    <item value="pt">pt</item>
+    <item value="in">in</item>
+  </param>
+  
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu>
+       <submenu _name="Laser Cut"/>
+    </effects-menu>
+  </effect>
+  <script>
+    <command reldir="extensions" interpreter="python">lc_stars.py</command>
+  </script>
+</inkscape-extension>
