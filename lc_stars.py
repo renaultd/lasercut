@@ -19,9 +19,16 @@ def rotate(p, ang):
             p[0]*math.sin(ang) + p[1]*math.cos(ang))
 
 def star_path(n, radius):
-    ang = 0; dang = 2*PI / n; res = []
-    # Create random external path 
-    efactor = 0.5; eradius = radius; eangle = 0
+    dang = 2*PI / n; res = []
+    # Prepare number of internal holes
+    holes   = random.randint(0,3)
+    efactor = 1 - 0.75 / (holes + 1)
+    ranges  = [ [ 0.9*efactor*(holes-i)/holes,
+                  0.9*efactor*(holes-i)/holes*(1-0.8/holes) ]
+                for i in range(holes)]
+    # Create random external path
+    ang = 0;
+    eradius = radius; eangle = 0
     path = [ ]
     points = [ (radius, 0) ]
     numi   = random.randint(3,8)
@@ -42,23 +49,24 @@ def star_path(n, radius):
     path.append((radius,0))
     res.append(path)
     # Create internal paths
-    ang = 0
-    eradius = efactor*radius
-    points = [ rotate((eradius*0.85,0),dang*0.5),
-               rotate((eradius*0.85,0),eangle) ]
-    points.append(rotate((eradius*0.65,0),0.2))
-    points.append(rotate((eradius*0.45,0),eangle))
-    points.append(rotate((eradius*0.45,0),dang*0.5))
-    # Reverse it
-    pointssym = map(lambda p : rotate((p[0],-p[1]), dang), points)
-    pointssym.reverse()
-    pointssym.pop(0)
-    points.extend(pointssym)
-    #points.append(rotate((eradius*0.9,0),eangle))
-    for i in range(n):
-        path = map(lambda p : rotate(p, ang), points)
-        res.append(path)
-        ang += dang
+    for l in ranges:
+        ang = 0
+        lmid = (l[0]+l[1]) / 2
+        points = [ rotate((radius*l[0],0),dang*0.5),
+                   rotate((radius*l[0],0),eangle) ]
+#        points.append(rotate((radius*lmid,0),0.2))
+        points.append(rotate((radius*l[1],0),eangle))
+        points.append(rotate((radius*l[1],0),dang*0.5))
+        # Reverse it
+        pointssym = map(lambda p : rotate((p[0],-p[1]), dang), points)
+        pointssym.reverse()
+        pointssym.pop(0)
+        points.extend(pointssym)
+        #points.append(rotate((eradius*0.9,0),eangle))
+        for i in range(n):
+            path = map(lambda p : rotate(p, ang), points)
+            res.append(path)
+            ang += dang
     return res
 
 class StarsEffect(inkex.Effect):
@@ -88,7 +96,7 @@ class StarsEffect(inkex.Effect):
         height    = self.options.height
         minsides  = self.options.minsides
         maxsides  = self.options.maxsides
-        radius    = self.options.radius
+        radius    = self.unittouu(str(self.options.radius)+self.options.unit)
         g = inkex.etree.SubElement(self.current_layer, 'g', {})
         style = formatStyle({ 'stroke': '#000000', \
                               'fill': 'none', \
