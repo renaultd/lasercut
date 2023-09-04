@@ -6,6 +6,8 @@ import sys
 import inkex
 import math
 
+def arg_int(x):
+    return int(x)
 def arg_float(x):
     return float(x)
 def arg_string(x):

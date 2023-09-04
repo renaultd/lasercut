@@ -3,7 +3,6 @@
   <_name>Stars</_name>
   <id>org.ekips.filter.lc_stars</id>
   <dependency type="executable" location="extensions">lc_stars.py</dependency>
-  <dependency type="executable" location="extensions">inkex.py</dependency>
 
   <param name="width" type="int" min="1" max="1000"
 	 _gui-text="Width">5</param>
@@ -22,7 +21,7 @@
     <item value="pt">pt</item>
     <item value="in">in</item>
   </param>
-  
+
   <effect>
     <object-type>all</object-type>
     <effects-menu>

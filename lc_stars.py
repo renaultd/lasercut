@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
+import lxml
 import sys
-sys.path.append('/usr/share/inkscape/extensions')
+# sys.path.append('/usr/share/inkscape/extensions')
 
 import inkex
 from simplestyle import *
@@ -19,16 +20,9 @@ def rotate(p, ang):
             p[0]*math.sin(ang) + p[1]*math.cos(ang))
 
 def star_path(n, radius):
-    dang = 2*PI / n; res = []
-    # Prepare number of internal holes
-    holes   = random.randint(0,3)
-    efactor = 1 - 0.75 / (holes + 1)
-    ranges  = [ [ 0.9*efactor*(holes-i)/holes,
-                  0.9*efactor*(holes-i)/holes*(1-0.8/holes) ]
-                for i in range(holes)]
+    ang = 0; dang = 2*PI / n; res = []
     # Create random external path
-    ang = 0;
-    eradius = radius; eangle = 0
+    efactor = 0.5; eradius = radius; eangle = 0
     path = [ ]
     points = [ (radius, 0) ]
     numi   = random.randint(3,8)
@@ -38,57 +32,56 @@ def star_path(n, radius):
         points.append(rotate((eradius, 0), eangle))
     points.append(rotate((efactor*radius, 0),dang/2))
     # Reverse it
-    pointssym = map(lambda p : (p[0],-p[1]), points)
+    pointssym = list(map(lambda p : (p[0],-p[1]), points))
     pointssym.pop(0)
     for i in range(n):
-        newpoints = map(lambda p : rotate(p,ang), points)
+        newpoints = list(map(lambda p : rotate(p,ang), points))
         path.extend(newpoints)
-        newpoints = reversed(map(lambda p : rotate(p,ang+dang), pointssym))
+        newpoints = reversed(list(map(lambda p : rotate(p,ang+dang), pointssym)))
         path.extend(newpoints)
         ang += dang
     path.append((radius,0))
     res.append(path)
     # Create internal paths
-    for l in ranges:
-        ang = 0
-        lmid = (l[0]+l[1]) / 2
-        points = [ rotate((radius*l[0],0),dang*0.5),
-                   rotate((radius*l[0],0),eangle) ]
-#        points.append(rotate((radius*lmid,0),0.2))
-        points.append(rotate((radius*l[1],0),eangle))
-        points.append(rotate((radius*l[1],0),dang*0.5))
-        # Reverse it
-        pointssym = map(lambda p : rotate((p[0],-p[1]), dang), points)
-        pointssym.reverse()
-        pointssym.pop(0)
-        points.extend(pointssym)
-        #points.append(rotate((eradius*0.9,0),eangle))
-        for i in range(n):
-            path = map(lambda p : rotate(p, ang), points)
-            res.append(path)
-            ang += dang
+    ang = 0
+    eradius = efactor*radius
+    points = [ rotate((eradius*0.85,0),dang*0.5),
+               rotate((eradius*0.85,0),eangle) ]
+    points.append(rotate((eradius*0.65,0),0.2))
+    points.append(rotate((eradius*0.45,0),eangle))
+    points.append(rotate((eradius*0.45,0),dang*0.5))
+    # Reverse it
+    pointssym = list(map(lambda p : rotate((p[0],-p[1]), dang), points))
+    pointssym.reverse()
+    pointssym.pop(0)
+    points.extend(pointssym)
+    #points.append(rotate((eradius*0.9,0),eangle))
+    for i in range(n):
+        path = list(map(lambda p : rotate(p, ang), points))
+        res.append(path)
+        ang += dang
     return res
 
 class StarsEffect(inkex.Effect):
     def __init__(self):
         inkex.Effect.__init__(self)
-        self.OptionParser.add_option('--width', action = 'store',
-          type = 'int', dest = 'width', default = '5',
+        self.arg_parser.add_argument('--width', action = 'store',
+          type = lc.arg_int, dest = 'width', default = '5',
           help = 'width')
-        self.OptionParser.add_option('--height', action = 'store',
-          type = 'int', dest = 'height', default = '5',
+        self.arg_parser.add_argument('--height', action = 'store',
+          type = lc.arg_int, dest = 'height', default = '5',
           help = 'height')
-        self.OptionParser.add_option('--maxsides', action = 'store',
-          type = 'int', dest = 'maxsides', default = '5',
+        self.arg_parser.add_argument('--maxsides', action = 'store',
+          type = lc.arg_int, dest = 'maxsides', default = '5',
           help = 'maxsides')
-        self.OptionParser.add_option('--minsides', action = 'store',
-          type = 'int', dest = 'minsides', default = '5',
+        self.arg_parser.add_argument('--minsides', action = 'store',
+          type = lc.arg_int, dest = 'minsides', default = '5',
           help = 'minsides')
-        self.OptionParser.add_option('--radius', action = 'store',
-          type = 'float', dest = 'radius', default = '5',
+        self.arg_parser.add_argument('--radius', action = 'store',
+          type = lc.arg_float, dest = 'radius', default = '5',
           help = 'radius')
-        self.OptionParser.add_option('--unit', action = 'store',
-          type = 'string', dest = 'unit', default = 'mm',
+        self.arg_parser.add_argument('--unit', action = 'store',
+          type = lc.arg_string, dest = 'unit', default = 'mm',
           help = 'unit')
 
     def effect(self):
@@ -96,13 +89,13 @@ class StarsEffect(inkex.Effect):
         height    = self.options.height
         minsides  = self.options.minsides
         maxsides  = self.options.maxsides
-        radius    = self.unittouu(str(self.options.radius)+self.options.unit)
-        g = inkex.etree.SubElement(self.current_layer, 'g', {})
-        style = formatStyle({ 'stroke': '#000000', \
+        radius    = self.options.radius
+        g = lxml.etree.SubElement(self.svg.get_current_layer(), 'g', {})
+        style = str(inkex.Style({ 'stroke': '#000000', \
                               'fill': 'none', \
                               'font-size' : "12px", \
-                              'stroke-width': str(self.unittouu('0.1mm')), \
-                              'text-anchor' : 'middle'  })
+                              'stroke-width': str(self.svg.unittouu('0.1mm')), \
+                              'text-anchor' : 'middle'  }))
 
         for x in range(width):
             for y in  range(height):
@@ -111,6 +104,6 @@ class StarsEffect(inkex.Effect):
                     path = lc.translate_points(p,
                                                x*radius*2.1, y*radius*2.1)
                     lc.insert_path(g, path, style)
-                           
+
 effect = StarsEffect()
-effect.affect()
+effect.run()
