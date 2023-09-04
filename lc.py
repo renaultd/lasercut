@@ -1,9 +1,15 @@
 #!/usr/bin/python
+import lxml
 import sys
-sys.path.append('/usr/share/inkscape/extensions')
+# sys.path.append('/usr/share/inkscape/extensions')
 
 import inkex
 import math
+
+def arg_float(x):
+    return float(x)
+def arg_string(x):
+    return str(x)
 
 ################################################################
 # Create a crenelated plate (face for a box)
@@ -198,13 +204,13 @@ def insert_point(elem, p, style):
     box_attribs = {
         'style': style,
         'd': path}
-    box = inkex.etree.SubElement(
+    box = lxml.etree.SubElement(
         elem, inkex.addNS('path', 'svg'), box_attribs)
 
 ################################################################
 # Insert a circular point into the SVG elem
 def insert_text(elem, p, s, style):
-    text = inkex.etree.Element(inkex.addNS('text','svg'))
+    text = lxml.etree.Element(inkex.addNS('text','svg'))
     text.text = s
     text.set('x', str(p[0]))
     text.set('y', str(p[1]))
@@ -220,7 +226,7 @@ def insert_path(elem, ps, style):
         'd': path}
     # for p in ps:
     #     insert_point(elem, p, style)
-    box = inkex.etree.SubElement(
+    box = lxml.etree.SubElement(
         elem, inkex.addNS('path', 'svg'), box_attribs)
 
 ################################################################
@@ -315,8 +321,10 @@ def insert_box(elem, dims, splits, thickness, innerDim, closeBox, style):
 # dx  : width of the holes
 # dy  : thickness of the holes
 # dir : 'n', 's', 'e', 'w'
-def insert_holes(elem, (x,y), (dx,dy),
+def insert_holes(elem, xy, dxy,
                  num, dir, style):
+    (x,y) = xy
+    (dx, dy) = dxy
     for i in range(num):
         points=[(x-dx/2,y-dy/2),(x+dx/2,y-dy/2),
                 (x+dx/2,y+dy/2),(x-dx/2,y+dy/2),
@@ -419,7 +427,7 @@ class Edge:
         if self.r_from:
             st += ", at " + str(self.r_from) + " dir=" + self.dir
         if len(self.touch) > 0:
-            st += ", touch [" + ", ".join(map(lambda (e,d): e.str_short(), self.touch)) + "]"
+            st += ", touch [" + ", ".join(map(lambda e,d: e.str_short(), self.touch)) + "]"
         if len(self.attch) > 0:
             st += ", attach [" + ", ".join(map(str, self.attch)) + "]"
         return st
@@ -440,18 +448,18 @@ def rotatedir(c):
 
 def decompose(es):
     # Remove additional information from the path
-    qs = map(lambda e: (filter(lambda f: len(f) == 2,
-                               map(lambda f: f[1], e))),
-             es)
+    qs = list(map(lambda e: (list(filter(lambda f: len(f) == 2,
+                                    list(map(lambda f: f[1], e))))),
+                  es))
     edges = [] # List of edges to be returned
 
     # Find border
-    tops = filter(lambda s: len(s) > 2, qs)
+    tops = list(filter(lambda s: len(s) > 2, qs))
     assert (len(tops) == 1), "Should be only one border"
     bb = tops[0]
-    xs = map(lambda x: x[0], bb)
+    xs = list(map(lambda x: x[0], bb))
     (xmin,xmax) = (min(xs),max(xs))
-    ys = map(lambda x: x[1], bb)
+    ys = list(map(lambda x: x[1], bb))
     (ymin,ymax) = (min(ys),max(ys))
     # Create border edges (nsew)
     ne = Edge((xmin,ymax),(xmax,ymax),True)
@@ -464,7 +472,7 @@ def decompose(es):
     edges.append(we)
 
     # Attach the edges in an acceptable order
-    svgs = filter(lambda s: len(s) == 2, qs)
+    svgs = list(filter(lambda s: len(s) == 2, qs))
     while len(svgs) > 0:
         e  = svgs[0]
         newe = Edge((e[0][0],e[0][1]),(e[1][0],e[1][1]))

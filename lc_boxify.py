@@ -1,10 +1,11 @@
+import lxml
 import sys
-sys.path.append('/usr/share/inkscape/extensions')
+# sys.path.append('/usr/share/inkscape/extensions')
 
 import inkex
-from simplestyle import *
+# from simplestyle import *
 
-import ink2canvas.svg
+# import ink2canvas.svg
 import simpletransform
 import simplepath
 import random
@@ -13,29 +14,29 @@ import lc
 class BoxifyEffect(inkex.Effect):
     def __init__(self):
         inkex.Effect.__init__(self)
-        self.OptionParser.add_option('--thickness', action = 'store',
-          type = 'float', dest = 'thickness', default = '3',
+        self.arg_parser.add_argument('--thickness', action = 'store',
+          type = lc.arg_float, dest = 'thickness', default = '3',
           help = 'thickness')
-        self.OptionParser.add_option('--height', action = 'store',
-          type = 'float', dest = 'height', default = '3',
+        self.arg_parser.add_argument('--height', action = 'store',
+          type = lc.arg_float, dest = 'height', default = '3',
           help = 'height')
-        self.OptionParser.add_option('--iheight', action = 'store',
-          type = 'float', dest = 'iheight', default = '3',
+        self.arg_parser.add_argument('--iheight', action = 'store',
+          type = lc.arg_float, dest = 'iheight', default = '3',
           help = 'interior height')
-        self.OptionParser.add_option('--unit', action = 'store',
-          type = 'string', dest = 'unit', default = 'mm',
+        self.arg_parser.add_argument('--unit', action = 'store',
+          type = lc.arg_string, dest = 'unit', default = 'mm',
           help = 'unit')
 
     def effect(self):
-        thickness=self.unittouu(str(self.options.thickness)+self.options.unit)
-        height=self.unittouu(str(self.options.height)+self.options.unit)
-        iheight=self.unittouu(str(self.options.iheight)+self.options.unit)
+        thickness=self.svg.unittouu(str(self.options.thickness)+self.options.unit)
+        height=self.svg.unittouu(str(self.options.height)+self.options.unit)
+        iheight=self.svg.unittouu(str(self.options.iheight)+self.options.unit)
         if len(self.options.ids)!=1:
             print >> sys.stderr,"you must select exactly one object"
             return
         id=self.options.ids[0]
-        node=self.selected[id]                   # Element
-        (xmin,xmax,ymin,ymax)=simpletransform.computeBBox([node]) # Tuple
+        node=self.svg.selected[id] # Element
+        ((xmin,xmax),(ymin,ymax))=node.bounding_box()
         width=xmax-xmin
         depth=ymax-ymin
         nodes=[]
@@ -51,9 +52,9 @@ class BoxifyEffect(inkex.Effect):
                     w = float(n.get('width'))
                     nodes.append([['M', [x,y]],['L', [x+w,y]],['L', [x+w,y+h]],['L', [x,y+h]]])
                 else:
-                    nodes.append(simplepath.parsePath(n.get('d')))
+                    nodes.append(n.path.to_arrays())
 
-        # inkex.debug(nodes)
+        # inkex.utils.debug(nodes)
         if (nodes == []):
             print >> sys.stderr,"selected object must be a path or a group of paths"
             return
@@ -63,12 +64,12 @@ class BoxifyEffect(inkex.Effect):
         g_attribs = {
             inkex.addNS('label', 'inkscape'): 'Boxify' + str(width) + \
             "x" + str(height) , 'transform': tr }
-        g = inkex.etree.SubElement(self.current_layer, 'g', g_attribs)
+        g = lxml.etree.SubElement(self.svg.get_current_layer(), 'g', g_attribs)
 
         # Create SVG Path for plate
-        style = formatStyle({ 'stroke': '#000000', \
-                              'fill': 'none', \
-                              'stroke-width': str(self.unittouu('1px')) })
+        style = str(inkex.Style({ 'stroke': '#000000', \
+                                  'fill': 'none', \
+                                  'stroke-width': str(self.svg.unittouu('1px')) }))
 
         # Create main box
         vdivs = max(int(height/(2*thickness))-1,1)
@@ -80,7 +81,7 @@ class BoxifyEffect(inkex.Effect):
                       thickness, False, False, style)
 
         # Insert remaining edges
-        # inkex.debug(nodes)
+        # inkex.utils.debug(nodes)
         edges = lc.decompose(nodes)
 
         # Position border edges (*after* having translated)
@@ -96,11 +97,11 @@ class BoxifyEffect(inkex.Effect):
         # Handle remaining edges
         numedges = 0
         for e in edges:
-            # inkex.debug("==========================")
-            # inkex.debug(str(e) + "\n")
+            # inkex.utils.debug("==========================")
+            # inkex.utils.debug(str(e) + "\n")
             # style = formatStyle({ 'stroke': "#%06x" % random.randint(0, 0xFFFFFF), \
             #                       'fill': 'none', \
-            #                       'stroke-width': str(self.unittouu('3px')) })
+            #                       'stroke-width': str(self.svg.unittouu('3px')) })
             numedges += 1
 
             # Determine edge direction in the main plate
@@ -147,8 +148,8 @@ class BoxifyEffect(inkex.Effect):
             # Do we need to split the joins of the edge ?
             tm_from = 0; tm_to = 0
             for (f,df) in e.touch:
-                tm_from += len(filter ((lambda q: ((q[0]-e.p_from[0])**2+(q[1]-e.p_from[1]))**2 < 0.1), f.attch))
-                tm_to   += len(filter ((lambda q: ((q[0]-e.p_to[0])**2+(q[1]-e.p_to[1]))**2 < 0.1), f.attch))
+                tm_from += len(list(filter ((lambda q: ((q[0]-e.p_from[0])**2+(q[1]-e.p_from[1]))**2 < 0.1), f.attch)))
+                tm_to   += len(list(filter ((lambda q: ((q[0]-e.p_to[0])**2+(q[1]-e.p_to[1]))**2 < 0.1), f.attch)))
 
             vdivs = max(int((height-iheight)/(2*thickness))-1,1)
             points=lc.make_plate((height-thickness-iheight,leng),(True,False),
@@ -165,7 +166,7 @@ class BoxifyEffect(inkex.Effect):
 
             # Left parts
             for (f,df) in e.touch:
-                # inkex.debug("Touch " + str(f) + " -- DIST= " + str(df) + "\n")
+                # inkex.utils.debug("Touch " + str(f) + " -- DIST= " + str(df) + "\n")
 
                 vdir = lc.rotatedir(f.dir)
                 if (vdir == 's') or (vdir == 'n'):
@@ -187,4 +188,4 @@ class BoxifyEffect(inkex.Effect):
                 lc.insert_holes(g, stf, (xdim,ydim), vdivs, vdir, style)
 
 effect = BoxifyEffect()
-effect.affect()
+effect.run()
