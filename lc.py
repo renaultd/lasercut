@@ -21,7 +21,13 @@ def arg_string(x):
 # thickness       : dimension for the thickness
 # wsplit, hsplit  : number of crenellations
 # bottom, top, left, right                     : either 'm', 'f' or '-'
-# bottomshift, topshift, leftshift, rightshift : boolean for parity
+# bottomshift, topshift, leftshift, rightshift : boolean for start of crenelations
+#
+# '-' means a straight line
+# 'f' means full-crenelated path, female (i.e caving in)
+# 'm' means full-crenelated path, male (i.e protruding)
+# 'w' means full-crenelated path
+# 'x' means full-crenelated path
 #
 # Returns a list of points
 def make_plate(dims, idims,\
@@ -496,11 +502,11 @@ def decompose(es):
 
 ################################################################
 if __name__ == '__main__':
-    # print make_plate((3,2),(True,True),
-    #                   0.5,2,2,
-    #                   'm',False,
-    #                   'm',False,
-    #                   'm',False,
-    #                   'm',False)
+    print(make_plate((14,11),(True,True),
+                     1,3,2,
+                     'w',False,
+                     'm',False,
+                     'm',False,
+                     'm',False))
    # decompose([[['M', [-734.28571, 118.07649]], ['L', [-220.0, 118.07649]], ['L', [-220.0, 589.50506]], ['L', [-734.28571, 589.50506]], ['Z', []]], [['M', [-431.42857, 118.07649]], ['L', [-431.42857, 589.50506]]]])
-   decompose([[['M', [-662.85714, 183.79077]], ['L', [-662.85714, 866.6479200000001]]], [['M', [-1194.2856, 183.79077]], ['L', [-377.1428199999999, 183.79077]], ['L', [-377.1428199999999, 866.64789]], ['L', [-1194.2856, 866.64789]], ['Z', []]]])
+   # decompose([[['M', [-662.85714, 183.79077]], ['L', [-662.85714, 866.6479200000001]]], [['M', [-1194.2856, 183.79077]], ['L', [-377.1428199999999, 183.79077]], ['L', [-377.1428199999999, 866.64789]], ['L', [-1194.2856, 866.64789]], ['Z', []]]])

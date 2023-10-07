@@ -39,9 +39,13 @@ class BoxifyEffect(inkex.Effect):
         ((xmin,xmax),(ymin,ymax))=node.bounding_box()
         width=xmax-xmin
         depth=ymax-ymin
+
+        # Build a set of nodes with instructions to build their paths
+        # 'M' means 'moveto'
+        # 'L' means 'lineto'
         nodes=[]
         if (node.tag == inkex.addNS('path','svg')):
-            nodes = [simplepath.parsePath(node.get('d'))]
+            nodes = [node.path.to_arrays()]
         if (node.tag == inkex.addNS('g','svg')):
             nodes = []
             for n in node.getchildren():
@@ -53,10 +57,9 @@ class BoxifyEffect(inkex.Effect):
                     nodes.append([['M', [x,y]],['L', [x+w,y]],['L', [x+w,y+h]],['L', [x,y+h]]])
                 else:
                     nodes.append(n.path.to_arrays())
-
         # inkex.utils.debug(nodes)
         if (nodes == []):
-            print >> sys.stderr,"selected object must be a path or a group of paths"
+            print >> sys.stderr, "Selected object must be a path or a group of paths (maybe convert it to a path first ?)"
             return
 
         # Create main SVG element
@@ -81,8 +84,8 @@ class BoxifyEffect(inkex.Effect):
                       thickness, False, False, style)
 
         # Insert remaining edges
-        # inkex.utils.debug(nodes)
         edges = lc.decompose(nodes)
+        # inkex.utils.debug(edges)
 
         # Position border edges (*after* having translated)
         e = edges.pop(0);
@@ -148,16 +151,16 @@ class BoxifyEffect(inkex.Effect):
             # Do we need to split the joins of the edge ?
             tm_from = 0; tm_to = 0
             for (f,df) in e.touch:
-                tm_from += len(list(filter ((lambda q: ((q[0]-e.p_from[0])**2+(q[1]-e.p_from[1]))**2 < 0.1), f.attch)))
-                tm_to   += len(list(filter ((lambda q: ((q[0]-e.p_to[0])**2+(q[1]-e.p_to[1]))**2 < 0.1), f.attch)))
+                tm_from += len(list(filter((lambda q: ((q[0]-e.p_from[0])**2+(q[1]-e.p_from[1]))**2 < 0.1), f.attch)))
+                tm_to   += len(list(filter((lambda q: ((q[0]-e.p_to[0])**2+(q[1]-e.p_to[1]))**2 < 0.1), f.attch)))
 
             vdivs = max(int((height-iheight)/(2*thickness))-1,1)
             points=lc.make_plate((height-thickness-iheight,leng),(True,False),
                               thickness,vdivs,num,
                               'm' if tm_to   <= 1 else ('x' if (e.getdir() == 'w') or (e.getdir() == 'n') else 'w'),False,
                               'm' if tm_from <= 1 else ('x' if (e.getdir() == 'w') or (e.getdir() == 'n') else 'w'),False,
-                              '-',False,
-                              'f',True)
+                              'm',False,
+                              '-',False)
             (dpx,dpy) = (xmax-xmin-2*thickness+numedges*(height-iheight)+iheight,0)
             points = lc.translate_points(points,dpx,dpy)
             lc.insert_path(g, points, style)
