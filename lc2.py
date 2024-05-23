@@ -507,7 +507,14 @@ class Plates:
 
 ################################################################
 class Edges:
-    """ A class that represents a 2D-box with subdivisions """
+    """ A class that represents a 2D-box with subdivisions.
+
+    depth:     the thickness of the wooden plate used
+    min_width: the minimal width for the crenelations
+    height:    the height of the box
+
+    """
+
     def __init__(self, min, max, height=10, depth=0.5, min_width=None):
         self._bb    = BoundingBox(min, max)
         self._edges = [
@@ -627,21 +634,33 @@ if __name__ == '__main__':
     ########################################################
     # Test cases
     # # Only a rectangle
-    # tc1 = Edges(P(0,0), P(10,10), height=10)
+    # tc1 = Edges(P(0,0), P(10,10), height=3)
     # test_cases.append(tc1)
     # # Rectangle with horizontal inner separation
-    # tc2 = Edges(P(0,0), P(10,10), height=10)
+    # tc2 = Edges(P(0,0), P(10,10), height=3)
     # tc2.add_edge(Edge(P(0,5),P(10,5)))
     # test_cases.append(tc2)
     # # Rectangle with vertical inner separation
-    # tc3 = Edges(P(0,0), P(10,10), height=10)
+    # tc3 = Edges(P(0,0), P(10,10), height=3)
     # tc3.add_edge(Edge(P(5,0),P(5,10)))
     # test_cases.append(tc3)
     # # Rectangle with two separations
-    tc4 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
-    tc4.add_edge(Edge(P(5,0),P(5,10)))
-    tc4.add_edge(Edge(P(5,7),P(10,7)))
-    test_cases.append(tc4)
+    # tc4 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    # tc4.add_edge(Edge(P(5,0),P(5,10)))
+    # tc4.add_edge(Edge(P(5,7),P(10,7)))
+    # test_cases.append(tc4)
+    # # Rectangle with three separations not meeting
+    # tc5 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    # tc5.add_edge(Edge(P(5,0),P(5,10)))
+    # tc5.add_edge(Edge(P(5,7),P(10,7)))
+    # tc5.add_edge(Edge(P(0,3),P(5,3)))
+    # test_cases.append(tc5)
+    # Rectangle with three separations meeting at the same height
+    tc6 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    tc6.add_edge(Edge(P(5,0),P(5,10)))
+    tc6.add_edge(Edge(P(5,7),P(10,7)))
+    tc6.add_edge(Edge(P(0,7),P(5,7)))
+    test_cases.append(tc6)
     ########################################################
     # Tests
     for tc in test_cases:
