@@ -100,7 +100,7 @@ class Edge(BoundingBox):
 
     """
     def __init__(self, min, max):
-        super(Edge, self).__init__(min, max)
+        super().__init__(min, max)
         self._touch  = []    # Edges on the extremities
         self._attch  = []    # Other edges touching this one
 
@@ -163,9 +163,9 @@ class Hole(Edge):
     can possibly attach itself.
 
     """
-    def __init__(self, min, max, type):
-        super(Edge, self).__init__(min, max)
-        self._type = type
+    def __init__(self, _min, _max, _type):
+        super().__init__(_min, _max)
+        self._type = _type
 
     @property
     def type(self): return self._type
@@ -204,8 +204,8 @@ class SvgPrinter:
     def print_rectangle(self, min, max, color=None, stroke_width=None):
         col = self._color if color is None else color
         sw  = self._stroke_width if stroke_width is None else stroke_width
-        width = max.x - min.x
-        height = max.y - min.y
+        width = abs(max.x - min.x)
+        height = abs(max.y - min.y)
         self.write(f"  <rect width='{width}' height='{height}' " +
                    f"x='{min.x}' y='{min.y}' " +
                    f"style='fill:none;stroke-width:{sw};stroke:{col}' " +
@@ -354,7 +354,7 @@ class Plate(BoundingBox):
         assert all( isinstance(b, PlateBorderType) for b in border_types ), \
             "Plate.__init__ : border_types are not PlateBorderType"
         upperright = P(max.x-min.x, max.y-min.y)
-        super(Plate, self).__init__(P(0,0), upperright)
+        super().__init__(P(0,0), upperright)
         self._label = label
         self._depth = depth
         self._min_width = min_width
@@ -380,7 +380,7 @@ class Plate(BoundingBox):
     def min_width(self): return self._min_width
 
     def translate(self, a_point):
-        super(Plate, self).translate(a_point)
+        super().translate(a_point)
         for i in range(len(self._holes)):
             self._holes[i].translate(a_point)
 
@@ -461,7 +461,7 @@ class Plate(BoundingBox):
         position      = min.add(direction.mult(border_type.start_offset))
         is_upper      = False
         length_done   = 0
-        length_todo   = vector.length() - border_type.start_offset - border_type.end_offset
+        # length_todo   = vector.length() - border_type.start_offset - border_type.end_offset
         for i in range(border_type.sides):
             if i == 0:
                 next_length = border_type.upper - border_type.start_offset
@@ -655,23 +655,23 @@ if __name__ == '__main__':
     # tc3 = Edges(P(0,0), P(10,10), height=3)
     # tc3.add_edge(Edge(P(5,0),P(5,10)))
     # test_cases.append(tc3)
-    # # Rectangle with two separations
-    # tc4 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
-    # tc4.add_edge(Edge(P(5,0),P(5,10)))
-    # tc4.add_edge(Edge(P(5,7),P(10,7)))
-    # test_cases.append(tc4)
+    # Rectangle with two separations
+    tc4 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    tc4.add_edge(Edge(P(5,0),P(5,10)))
+    tc4.add_edge(Edge(P(5,7),P(10,7)))
+    test_cases.append(tc4)
     # # Rectangle with three separations not meeting
     # tc5 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
     # tc5.add_edge(Edge(P(5,0),P(5,10)))
     # tc5.add_edge(Edge(P(5,7),P(10,7)))
     # tc5.add_edge(Edge(P(0,3),P(5,3)))
     # test_cases.append(tc5)
-    # Rectangle with three separations meeting at the same height
-    tc6 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
-    tc6.add_edge(Edge(P(5,0),P(5,10)))
-    tc6.add_edge(Edge(P(5,7),P(10,7)))
-    tc6.add_edge(Edge(P(0,7),P(5,7)))
-    test_cases.append(tc6)
+    # # Rectangle with three separations meeting at the same height
+    # tc6 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    # tc6.add_edge(Edge(P(5,0),P(5,10)))
+    # tc6.add_edge(Edge(P(5,7),P(10,7)))
+    # tc6.add_edge(Edge(P(0,7),P(5,7)))
+    # test_cases.append(tc6)
     ########################################################
     # Tests
     for tc in test_cases:
