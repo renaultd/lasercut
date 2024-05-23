@@ -387,7 +387,7 @@ class Plate(BoundingBox):
                 hole_start = an_edge.origin
                 hole_end   = an_edge.dest
                 border     = PlateBorder(type=an_edge.type,
-                                         start=hole_start, end=hole_end, min_width=self.min_width)
+                                         start=hole_start, end=hole_end, min_width=self.min_width, depth=self.depth)
                 self.dump_holes_to_svg(a_printer, hole_start, hole_end, border)
         a_printer.end_group()
 
@@ -449,9 +449,9 @@ class Plate(BoundingBox):
         direction = vector.unit()
         perpendicular = direction.perp()
         position      = min.add(direction.mult(border_type.start_offset))
+        is_upper      = False
         length_done   = 0
         length_todo   = vector.length() - border_type.start_offset - border_type.end_offset
-        a_printer.set_color("violet")
         for i in range(border_type.sides):
             if i == 0:
                 next_length = border_type.upper - border_type.start_offset
@@ -461,13 +461,12 @@ class Plate(BoundingBox):
                 next_length = border_type.upper
             next_segment = direction.mult(next_length)
             next_position = position.add(next_segment)
-            a_printer.print_rectangle(position.add(perpendicular.mult(0.1*(i+1))),
-                                      next_position.add(perpendicular.mult(-0.1*(i+1))))
+            if (is_upper):
+                a_printer.print_rectangle(position.add(perpendicular.mult(border_type.depth/2)),
+                                          next_position.add(perpendicular.mult(-border_type.depth/2)))
             length_done += next_segment.length()
             position = next_position
-        # a_printer.set_color("green")
-        # a_printer.print_segment(min.add(direction.mult(border_type.start_offset)),
-        #                         max.sub(direction.mult(border_type.end_offset)))
+            is_upper = not(is_upper)
 
     def __repr__(self):
         if self._label:
@@ -639,7 +638,7 @@ if __name__ == '__main__':
     # tc3.add_edge(Edge(P(5,0),P(5,10)))
     # test_cases.append(tc3)
     # # Rectangle with two separations
-    tc4 = Edges(P(0,0), P(10,10), height=3, min_width=1.1)
+    tc4 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
     tc4.add_edge(Edge(P(5,0),P(5,10)))
     tc4.add_edge(Edge(P(5,7),P(10,7)))
     test_cases.append(tc4)
