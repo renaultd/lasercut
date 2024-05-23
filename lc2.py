@@ -170,6 +170,9 @@ class Hole(Edge):
     @property
     def type(self): return self._type
 
+    def __repr__(self):
+        return f"Hole(({self.xmin},{self.ymin})->({self.xmax},{self.ymax}))"
+
 
 ################################################################
 class SvgPrinter:
@@ -458,17 +461,12 @@ class Plate(BoundingBox):
         vector = max.sub(min)
         direction = vector.unit()
         perpendicular = direction.perp()
-        position      = min.add(direction.mult(border_type.start_offset))
+        position      = min
         is_upper      = False
         length_done   = 0
         # length_todo   = vector.length() - border_type.start_offset - border_type.end_offset
         for i in range(border_type.sides):
-            if i == 0:
-                next_length = border_type.upper - border_type.start_offset
-            elif i == border_type.sides-1:
-                next_length = border_type.upper - border_type.end_offset
-            else:
-                next_length = border_type.upper
+            next_length = border_type.upper
             next_segment = direction.mult(next_length)
             next_position = position.add(next_segment)
             if (is_upper):
@@ -522,6 +520,7 @@ class Edges:
 
     depth:     the thickness of the wooden plate used
     min_width: the minimal width for the crenelations
+               min_width should be >= depth
     height:    the height of the box
 
     """
@@ -592,9 +591,9 @@ class Edges:
     def compute_plates(self):
         # Add the global plate
         holes = [ Hole(an_edge.origin, an_edge.dest,
-                       PlateBorderType.straight(start=self.depth if self.is_attached_to_border(an_edge.origin) else self.depth/2,
-                                                end=self.depth if self.is_attached_to_border(an_edge.dest) else self.depth/2))
+                       PlateBorderType.straight())
                   for id_edge, an_edge in enumerate(self.edges) if id_edge >= 4 ]
+        print(holes)
         self._plates.append(Plate(self.bb.lowerleft, self.bb.upperright,
                                   label="Bottom Plate", depth=self.depth, min_width=self.min_width,
                                   border_types=[ PlateBorderType.crenelated_protruding() ] * 4,
@@ -623,7 +622,7 @@ class Edges:
                     PlateBorderType.crenelated_caving_in(end=self.depth),
                 ]
             holes = [ Hole(P(a_length,0), P(a_length,self.height),
-                           PlateBorderType.straight(start=self.depth))
+                           PlateBorderType.straight())
                       for a_length in an_edge.attached_lengths ]
             self._plates.append(Plate(P(0, 0), P(an_edge.length, self.height),
                                       label=label, depth=self.depth, min_width=self.min_width,

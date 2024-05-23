@@ -32,7 +32,7 @@ class BoxifyEffect(inkex.Effect):
         height=self.svg.unittouu(str(self.options.height)+self.options.unit)
         iheight=self.svg.unittouu(str(self.options.iheight)+self.options.unit)
         if len(self.options.ids)!=1:
-            print >> sys.stderr,"you must select exactly one object"
+            print("you must select exactly one object", file=sys.stderr)
             return
         id=self.options.ids[0]
         node=self.svg.selected[id] # Element
@@ -84,24 +84,28 @@ class BoxifyEffect(inkex.Effect):
                       thickness, False, False, style)
 
         # Insert remaining edges
-        edges = lc.decompose(nodes)
-        # inkex.utils.debug(edges)
+        # First compute the decomposition and the concrete values of the bounding box
+        inkex.utils.debug(nodes)
+        ((edges, ((xmin,xmax), (ymin,ymax)))) = lc.decompose(nodes)
+        inkex.utils.debug(((xmin,xmax), (ymin,ymax)))
+        for e in edges:
+            inkex.utils.debug(e)
 
         # Position border edges (*after* having translated)
         e = edges.pop(0);
-        e.position((xmax-xmin-thickness,0),'w')
+        e.position((width-thickness,0),'w')
         e = edges.pop(0);
-        e.position((-thickness,ymin-ymax+2*thickness),'e')
+        e.position((-thickness,-depth+2*thickness),'e')
         e = edges.pop(0);
-        e.position((xmax-xmin-2*thickness,ymin-ymax+thickness),'s')
+        e.position((width-2*thickness,-depth+thickness),'s')
         e = edges.pop(0);
         e.position((0,thickness),'n')
 
         # Handle remaining edges
         numedges = 0
         for e in edges:
-            # inkex.utils.debug("==========================")
-            # inkex.utils.debug(str(e) + "\n")
+            inkex.utils.debug("==========================")
+            inkex.utils.debug(str(e) + "\n")
             # style = formatStyle({ 'stroke': "#%06x" % random.randint(0, 0xFFFFFF), \
             #                       'fill': 'none', \
             #                       'stroke-width': str(self.svg.unittouu('3px')) })
@@ -117,24 +121,24 @@ class BoxifyEffect(inkex.Effect):
                     leng += thickness/2
 
             num  = int((leng-2*thickness)/(2*thickness))
-
+            # Compute the start of the holes
             if (dir == 's') or (dir == 'n'): # Vertical edge
                 dims = (thickness,(leng-2*thickness)/(2*num+1))
                 if (dir == 's'):
                     st = (e.p_from[0]-xmin-thickness,
-                          e.p_from[1]-ymax-dims[1]/2+thickness)
+                          e.p_from[1]-ymax)
                 else:
                     st = (e.p_from[0]-xmin-thickness,
                           e.p_from[1]-ymax+2*thickness+dims[1]/2)
-                if not((abs(e.p_from[1]-ymin) < 0.1) or
-                       (abs(e.p_from[1]-ymax) < 0.1)): # Is the start point on the border ?
-                    st = (st[0],st[1]-thickness/2)
-                else:
-                    st = (st[0],st[1])
+                # if not((abs(e.p_from[1]-ymin) < 0.1) or
+                #        (abs(e.p_from[1]-ymax) < 0.1)): # Is the start point on the border ?
+                #     st = (st[0],st[1]-thickness/2)
+                # else:
+                #     st = (st[0],st[1])
             else: # Horizontal edge
                 dims = ((leng-2*thickness)/(2*num+1),thickness)
                 if (dir == 'e'):
-                    st = (e.p_from[0]-xmin+dims[0]/2,
+                    st = (e.p_from[0]-xmin+dims[0]/2+thickness,
                           e.p_from[1]-ymax+thickness)
                 else:
                     st = (e.p_from[0]-xmin-2*thickness-dims[0]/2,
@@ -146,7 +150,8 @@ class BoxifyEffect(inkex.Effect):
                     else:
                         st = (st[0]+thickness/2,st[1])
 
-            lc.insert_holes(g, st, dims, num+1, dir, style)
+            inkex.utils.debug((g, st, dims, num, dir, style))
+            lc.insert_holes(g, st, dims, num, dir, style)
 
             # Do we need to split the joins of the edge ?
             tm_from = 0; tm_to = 0
@@ -161,10 +166,10 @@ class BoxifyEffect(inkex.Effect):
                               'm' if tm_from <= 1 else ('x' if (e.getdir() == 'w') or (e.getdir() == 'n') else 'w'),False,
                               'm',False,
                               '-',False)
-            (dpx,dpy) = (xmax-xmin-2*thickness+numedges*(height-iheight)+iheight,0)
+            (dpx,dpy) = (width-2*thickness+numedges*(height-iheight)+iheight,0)
             points = lc.translate_points(points,dpx,dpy)
             lc.insert_path(g, points, style)
-            e.position((xmax-xmin+(height-iheight)*(numedges+1)+iheight-2*thickness,
+            e.position((width+(height-iheight)*(numedges+1)+iheight-2*thickness,
                         thickness), 'n')
 
             # Left parts

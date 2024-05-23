@@ -3,7 +3,7 @@ import lxml
 import sys
 # sys.path.append('/usr/share/inkscape/extensions')
 
-import inkex
+# import inkex
 import math
 
 def arg_int(x):
@@ -198,7 +198,7 @@ def points_to_svgd(ps):
     p = ps[1:]
     svgd = 'M%.3f,%.3f' % f
     for x in ps:
-        svgd += 'L%.3f,%.3f' % x
+        svgd += ' L%.3f,%.3f' % x
     return svgd
 
 ################################################################
@@ -413,7 +413,7 @@ class Edge:
 
     # Get the direction of the edge in [nsew]
     def getdir(self):
-        if (abs(self.p_from[0] - self.p_to[0]) < 0.01):
+        if (abs((self.p_from[0] - self.p_to[0])/self.p_from[0]) < 0.01):
             if (self.p_from[1] > self.p_to[1]):
                 dir = 's'
             else:
@@ -435,10 +435,13 @@ class Edge:
         if self.r_from:
             st += ", at " + str(self.r_from) + " dir=" + self.dir
         if len(self.touch) > 0:
-            st += ", touch [" + ", ".join(map(lambda e,d: e.str_short(), self.touch)) + "]"
+            # st += ", touch [" + ", ".join(map(lambda e: e.str_short(), self.touch)) + "]"
+            st += ", touch [" + ", ".join(map(lambda e: str(e), self.touch)) + "]"
         if len(self.attch) > 0:
             st += ", attach [" + ", ".join(map(str, self.attch)) + "]"
         return st
+    def __repr__(self):
+        return str(self)
 
     def str_short(self):
         st = "Edge from " + str(self.p_from) + " to " + str(self.p_to)
@@ -497,16 +500,50 @@ def decompose(es):
     # for e in edges:
     #     print e
 
-    return(edges)
+    return ((edges, ((xmin,xmax), (ymin,ymax))))
+
+def boxify(edges):
+    # Create main box
+    print(f'Create main box')
+
+    # Insert remaining edges
+
+    # Position border edges (*after* having translated)
+
+    # Handle remaining edges
+    print(f'Handle remaining edges')
+    for e in edges:
+        print(f'Inserting holes in bottom plate for {e}')
+
+        print(f'Creating plate for {e}')
+
+        # Additional sets of holes associated to this edge
+        for (f,df) in e.touch:
+            print(f'Adding holes for {e} attached to {f}')
+
 
 
 ################################################################
 if __name__ == '__main__':
-    print(make_plate((14,11),(True,True),
-                     1,3,2,
-                     'w',False,
-                     'm',False,
-                     'm',False,
-                     'm',False))
-   # decompose([[['M', [-734.28571, 118.07649]], ['L', [-220.0, 118.07649]], ['L', [-220.0, 589.50506]], ['L', [-734.28571, 589.50506]], ['Z', []]], [['M', [-431.42857, 118.07649]], ['L', [-431.42857, 589.50506]]]])
-   # decompose([[['M', [-662.85714, 183.79077]], ['L', [-662.85714, 866.6479200000001]]], [['M', [-1194.2856, 183.79077]], ['L', [-377.1428199999999, 183.79077]], ['L', [-377.1428199999999, 866.64789]], ['L', [-1194.2856, 866.64789]], ['Z', []]]])
+    test_cases = []
+    # Only a rectangle
+    test_cases.append([
+        [['M', [0, 0]], ['L', [10, 0]], ['L', [10, 10]], ['L', [0, 10]], ['Z', []]],
+    ])
+    # # Rectangle with horizontal inner separation
+    # test_cases.append([
+    #     [['M', [0, 0]], ['L', [10, 0]], ['L', [10, 10]], ['L', [0, 10]], ['Z', []]],
+    #     [['M', [0, 5]], ['L', [10, 5]]],
+    # ])
+    # # Rectangle with vertical inner separation
+    # test_cases.append([
+    #     [['M', [0, 0]], ['L', [10, 0]], ['L', [10, 10]], ['L', [0, 10]], ['Z', []]],
+    #     [['M', [5, 10]], ['L', [5, 0]]],
+    # ])
+    # Tests
+    for tc in test_cases:
+        (edges, ((xmin,xmax),(ymin,ymax))) = decompose(tc)
+        assert xmin == 0 and xmax == 10
+        assert ymin == 0 and ymax == 10
+        print(edges)
+        boxify(edges)
