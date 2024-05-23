@@ -38,8 +38,10 @@ class Point:
     def __repr__(self):
         return f"({self.x},{self.y})"
 
+# Alias for the Point constructor
 def P(x,y):
     return Point(x, y)
+
 
 ################################################################
 class BoundingBox:
@@ -86,6 +88,7 @@ class BoundingBox:
 
     def __repr__(self):
         return f"BB(({self.xmin},{self.ymin})->({self.xmax},{self.ymax}))"
+
 
 ################################################################
 class Edge(BoundingBox):
@@ -154,7 +157,12 @@ class Edge(BoundingBox):
 
 ################################################################
 class Hole(Edge):
-    """ A class that represents an edge for holes """
+    """A class that represents an edge only for holes.
+
+    Typically, it represents a set of holes into which another edge
+    can possibly attach itself.
+
+    """
     def __init__(self, min, max, type):
         super(Edge, self).__init__(min, max)
         self._type = type
@@ -210,8 +218,9 @@ class SvgPrinter:
                    f"style='stroke-width:{sw};stroke:{col}'/>")
 
     def start_group(self, id, label):
-        self.write(f"<g id='{id}' inkscape:label='{label} ' " + \
-                   f"inkscape:groupmode='layer'>")
+        self.write(f"<g>")
+        # self.write(f"<g id='{id}' inkscape:label='{label} ' " + \
+        #            f"inkscape:groupmode='layer'>")
 
     def end_group(self):
         self.write(f"</g>")
@@ -260,6 +269,7 @@ class PlateBorderStyle(Enum):
                 return "crenelated caving in"
             case _:
                 return "unknown"
+
 
 ################################################################
 class PlateBorderType:
@@ -504,6 +514,7 @@ class Plates:
     def __iter__(self):
         for a_plate in self._plates:
             yield a_plate
+
 
 ################################################################
 class Edges:
