@@ -209,6 +209,7 @@ class SvgPrinter:
         sw  = self._stroke_width if stroke_width is None else stroke_width
         width = abs(max.x - min.x)
         height = abs(max.y - min.y)
+        # print("print rectangle", min, max, width, height)
         self.write(f"  <rect width='{width}' height='{height}' " +
                    f"x='{min.x}' y='{min.y}' " +
                    f"style='fill:none;stroke-width:{sw};stroke:{col}' " +
@@ -590,10 +591,20 @@ class Edges:
 
     def compute_plates(self):
         # Add the global plate
-        holes = [ Hole(an_edge.origin, an_edge.dest,
-                       PlateBorderType.straight())
-                  for id_edge, an_edge in enumerate(self.edges) if id_edge >= 4 ]
-        print(holes)
+        holes = [ ]
+        for id_edge, an_edge in enumerate(self.edges):
+            if id_edge >= 4:
+                vector = an_edge.dest.sub(an_edge.origin).unit()
+                if not(self.is_attached_to_border(an_edge.origin)):
+                    hole_start = an_edge.origin.add(vector.mult(-self.depth/2))
+                else:
+                    hole_start = an_edge.origin
+                if not(self.is_attached_to_border(an_edge.dest)):
+                    hole_end = an_edge.dest.add(vector.mult(self.depth/2))
+                else:
+                    hole_end = an_edge.dest
+                holes.append(Hole(hole_start, hole_end, PlateBorderType.straight()))
+        # print("holes", holes)
         self._plates.append(Plate(self.bb.lowerleft, self.bb.upperright,
                                   label="Bottom Plate", depth=self.depth, min_width=self.min_width,
                                   border_types=[ PlateBorderType.crenelated_protruding() ] * 4,
@@ -624,7 +635,12 @@ class Edges:
             holes = [ Hole(P(a_length,0), P(a_length,self.height),
                            PlateBorderType.straight())
                       for a_length in an_edge.attached_lengths ]
-            self._plates.append(Plate(P(0, 0), P(an_edge.length, self.height),
+            length = an_edge.length
+            if not(self.is_attached_to_border(an_edge.min)):
+                length += self.depth / 2
+            if not(self.is_attached_to_border(an_edge.max)):
+                length += self.depth / 2
+            self._plates.append(Plate(P(0, 0), P(length, self.height),
                                       label=label, depth=self.depth, min_width=self.min_width,
                                       border_types=bts, holes=holes))
 
@@ -654,17 +670,17 @@ if __name__ == '__main__':
     # tc3 = Edges(P(0,0), P(10,10), height=3)
     # tc3.add_edge(Edge(P(5,0),P(5,10)))
     # test_cases.append(tc3)
-    # Rectangle with two separations
-    tc4 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
-    tc4.add_edge(Edge(P(5,0),P(5,10)))
-    tc4.add_edge(Edge(P(5,7),P(10,7)))
-    test_cases.append(tc4)
-    # # Rectangle with three separations not meeting
-    # tc5 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
-    # tc5.add_edge(Edge(P(5,0),P(5,10)))
-    # tc5.add_edge(Edge(P(5,7),P(10,7)))
-    # tc5.add_edge(Edge(P(0,3),P(5,3)))
-    # test_cases.append(tc5)
+    # # Rectangle with two separations
+    # tc4 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    # tc4.add_edge(Edge(P(5,0),P(5,10)))
+    # tc4.add_edge(Edge(P(5,7),P(10,7)))
+    # test_cases.append(tc4)
+    # Rectangle with three separations not meeting
+    tc5 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    tc5.add_edge(Edge(P(5,0),P(5,10)))
+    tc5.add_edge(Edge(P(5,7),P(10,7)))
+    tc5.add_edge(Edge(P(0,3),P(5,3)))
+    test_cases.append(tc5)
     # # Rectangle with three separations meeting at the same height
     # tc6 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
     # tc6.add_edge(Edge(P(5,0),P(5,10)))
