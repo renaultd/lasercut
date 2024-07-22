@@ -207,11 +207,13 @@ class SvgPrinter:
     def print_rectangle(self, min, max, color=None, stroke_width=None):
         col = self._color if color is None else color
         sw  = self._stroke_width if stroke_width is None else stroke_width
+        min_x = min.x if min.x < max.x else max.x
+        min_y = min.y if min.y < max.y else max.y
         width = abs(max.x - min.x)
         height = abs(max.y - min.y)
         # print("print rectangle", min, max, width, height)
         self.write(f"  <rect width='{width}' height='{height}' " +
-                   f"x='{min.x}' y='{min.y}' " +
+                   f"x='{min_x}' y='{min_y}' " +
                    f"style='fill:none;stroke-width:{sw};stroke:{col}' " +
                    f"/>")
 
@@ -389,12 +391,14 @@ class Plate(BoundingBox):
             self._holes[i].translate(a_point)
 
     def dump_to_svg(self, a_printer, an_id):
+        print("Dumping plate to svg")
         a_printer.start_group(an_id, f"Layer {self.label}")
         self.dump_segment_to_svg(a_printer, self.lowerleft,  self.lowerright, self._borders[0])
         self.dump_segment_to_svg(a_printer, self.lowerright, self.upperright, self._borders[1])
         self.dump_segment_to_svg(a_printer, self.upperright, self.upperleft,  self._borders[2])
         self.dump_segment_to_svg(a_printer, self.upperleft,  self.lowerleft,  self._borders[3])
         if len(self._holes) > 0:
+            print(self._holes)
             ltor = self.lowerright.sub(self.lowerleft).unit()
             dtou = self.upperleft.sub(self.lowerleft)
             for an_edge in self._holes:
@@ -459,18 +463,24 @@ class Plate(BoundingBox):
                 assert False, f"dump_segment_to_svg: unknown type {type}"
 
     def dump_holes_to_svg(self, a_printer, min, max, border_type):
+        """ Print the rectangles corresponding to holes inside a plate
+            min and max correspond to the extremities of the edge
+        """
         vector = max.sub(min)
         direction = vector.unit()
         perpendicular = direction.perp()
         position      = min
-        is_upper      = False
+        is_upper      = False # Do we print the hole ?
         length_done   = 0
+        print(direction, perpendicular, position, border_type.upper)
         # length_todo   = vector.length() - border_type.start_offset - border_type.end_offset
         for i in range(border_type.sides):
             next_length = border_type.upper
             next_segment = direction.mult(next_length)
             next_position = position.add(next_segment)
             if (is_upper):
+                print("C1", position.add(perpendicular.mult(border_type.depth/2)))
+                print("C2", next_position.add(perpendicular.mult(-border_type.depth/2)))
                 a_printer.print_rectangle(position.add(perpendicular.mult(border_type.depth/2)),
                                           next_position.add(perpendicular.mult(-border_type.depth/2)))
             length_done += next_segment.length()
@@ -593,7 +603,7 @@ class Edges:
         # Add the global plate
         holes = [ ]
         for id_edge, an_edge in enumerate(self.edges):
-            if id_edge >= 4:
+            if id_edge >= 4: # Not the global border
                 vector = an_edge.dest.sub(an_edge.origin).unit()
                 if not(self.is_attached_to_border(an_edge.origin)):
                     hole_start = an_edge.origin.add(vector.mult(-self.depth/2))
@@ -604,7 +614,7 @@ class Edges:
                 else:
                     hole_end = an_edge.dest
                 holes.append(Hole(hole_start, hole_end, PlateBorderType.straight()))
-        # print("holes", holes)
+        print("holes", holes)
         self._plates.append(Plate(self.bb.lowerleft, self.bb.upperright,
                                   label="Bottom Plate", depth=self.depth, min_width=self.min_width,
                                   border_types=[ PlateBorderType.crenelated_protruding() ] * 4,
@@ -660,12 +670,12 @@ if __name__ == '__main__':
     ########################################################
     # Test cases
     # Only a rectangle
-    tc1 = Edges(P(0,0), P(10,10), height=3, min_width=3)
-    test_cases.append(tc1)
-    # # Rectangle with horizontal inner separation
-    # tc2 = Edges(P(0,0), P(10,10), height=3)
-    # tc2.add_edge(Edge(P(0,5),P(10,5)))
-    # test_cases.append(tc2)
+    tc1 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    # test_cases.append(tc1)
+    # Rectangle with horizontal inner separation
+    tc2 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    tc2.add_edge(Edge(P(0,5),P(10,5)))
+    test_cases.append(tc2)
     # # Rectangle with vertical inner separation
     # tc3 = Edges(P(0,0), P(10,10), height=3)
     # tc3.add_edge(Edge(P(5,0),P(5,10)))
