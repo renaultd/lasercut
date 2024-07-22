@@ -391,7 +391,7 @@ class Plate(BoundingBox):
             self._holes[i].translate(a_point)
 
     def dump_to_svg(self, a_printer, an_id):
-        print("Dumping plate to svg")
+        print("Dumping plate to svg", self.lowerleft, self.upperright)
         a_printer.start_group(an_id, f"Layer {self.label}")
         self.dump_segment_to_svg(a_printer, self.lowerleft,  self.lowerright, self._borders[0])
         self.dump_segment_to_svg(a_printer, self.lowerright, self.upperright, self._borders[1])
@@ -472,15 +472,15 @@ class Plate(BoundingBox):
         position      = min
         is_upper      = False # Do we print the hole ?
         length_done   = 0
-        print(direction, perpendicular, position, border_type.upper)
+        # print(direction, perpendicular, position, border_type.upper)
         # length_todo   = vector.length() - border_type.start_offset - border_type.end_offset
         for i in range(border_type.sides):
             next_length = border_type.upper
             next_segment = direction.mult(next_length)
             next_position = position.add(next_segment)
             if (is_upper):
-                print("C1", position.add(perpendicular.mult(border_type.depth/2)))
-                print("C2", next_position.add(perpendicular.mult(-border_type.depth/2)))
+                # print("C1", position.add(perpendicular.mult(border_type.depth/2)))
+                # print("C2", next_position.add(perpendicular.mult(-border_type.depth/2)))
                 a_printer.print_rectangle(position.add(perpendicular.mult(border_type.depth/2)),
                                           next_position.add(perpendicular.mult(-border_type.depth/2)))
             length_done += next_segment.length()
@@ -599,6 +599,9 @@ class Edges:
     def is_attached_to_border(self, a_point):
         return any(a_border.contains(a_point) for a_border in self._edges[:4])
 
+    def is_attached_to_inside_edge(self, a_point):
+        return any(an_edge.contains(a_point) for an_edge in self._edges[4:])
+
     def compute_plates(self):
         # Add the global plate
         holes = [ ]
@@ -614,7 +617,7 @@ class Edges:
                 else:
                     hole_end = an_edge.dest
                 holes.append(Hole(hole_start, hole_end, PlateBorderType.straight()))
-        print("holes", holes)
+        # print("holes", holes)
         self._plates.append(Plate(self.bb.lowerleft, self.bb.upperright,
                                   label="Bottom Plate", depth=self.depth, min_width=self.min_width,
                                   border_types=[ PlateBorderType.crenelated_protruding() ] * 4,
@@ -646,10 +649,13 @@ class Edges:
                            PlateBorderType.straight())
                       for a_length in an_edge.attached_lengths ]
             length = an_edge.length
-            # if not(self.is_attached_to_border(an_edge.min)):
-            #     length += self.depth / 2
-            # if not(self.is_attached_to_border(an_edge.max)):
-            #     length += self.depth / 2
+            print(an_edge,
+                  "ATTACHED MIN", self.is_attached_to_inside_edge(an_edge.min),
+                  "MAX", self.is_attached_to_inside_edge(an_edge.max))
+            if self.is_attached_to_inside_edge(an_edge.min):
+                length += self.depth / 2
+            if self.is_attached_to_inside_edge(an_edge.max):
+                length += self.depth / 2
             self._plates.append(Plate(P(0, 0), P(length, self.height),
                                       label=label, depth=self.depth, min_width=self.min_width,
                                       border_types=bts, holes=holes))
@@ -675,28 +681,32 @@ if __name__ == '__main__':
     # Rectangle with horizontal inner separation
     tc2 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
     tc2.add_edge(Edge(P(0,5),P(10,5)))
-    test_cases.append(tc2)
-    # # Rectangle with vertical inner separation
-    # tc3 = Edges(P(0,0), P(10,10), height=3)
-    # tc3.add_edge(Edge(P(5,0),P(5,10)))
+    # test_cases.append(tc2)
+    # Rectangle with vertical inner separation
+    tc3 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    tc3.add_edge(Edge(P(5,0),P(5,10)))
     # test_cases.append(tc3)
-    # # Rectangle with two separations
-    # tc4 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
-    # tc4.add_edge(Edge(P(5,0),P(5,10)))
-    # tc4.add_edge(Edge(P(5,7),P(10,7)))
+    # Rectangle with vertical inner separation, not in the middle
+    tc4 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    tc4.add_edge(Edge(P(6.5,0),P(6.5,10)))
     # test_cases.append(tc4)
+    # Rectangle with two perpendicular separations
+    tc5 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    tc5.add_edge(Edge(P(5,0),P(5,10)))
+    tc5.add_edge(Edge(P(5,7),P(10,7)))
+    test_cases.append(tc5)
     # # Rectangle with three separations not meeting
-    # tc5 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
-    # tc5.add_edge(Edge(P(5,0),P(5,10)))
-    # tc5.add_edge(Edge(P(5,7),P(10,7)))
-    # tc5.add_edge(Edge(P(0,3),P(5,3)))
-    # test_cases.append(tc5)
-    # # Rectangle with three separations meeting at the same height
     # tc6 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
     # tc6.add_edge(Edge(P(5,0),P(5,10)))
     # tc6.add_edge(Edge(P(5,7),P(10,7)))
-    # tc6.add_edge(Edge(P(0,7),P(5,7)))
+    # tc6.add_edge(Edge(P(0,3),P(5,3)))
     # test_cases.append(tc6)
+    # # Rectangle with three separations meeting at the same height
+    # tc7 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    # tc7.add_edge(Edge(P(5,0),P(5,10)))
+    # tc7.add_edge(Edge(P(5,7),P(10,7)))
+    # tc7.add_edge(Edge(P(0,7),P(5,7)))
+    # test_cases.append(tc7)
     ########################################################
     # Tests
     for tc in test_cases:
