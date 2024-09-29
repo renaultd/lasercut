@@ -195,13 +195,13 @@ class SvgPrinter:
 
     def print_header(self, bb):
         self.write("<?xml version='1.0' encoding='UTF-8'?>\n")
-        viewBox = f"{bb.xmin - self._margin} " + \
-            f"{bb.ymin - self._margin} " + \
-            f"{bb.width + 2*self._margin} " + \
-            f"{bb.height + 2*self._margin}"
-        self.write(f"<svg width='{bb.width + self._margin}' " +
+        viewBox = f"{bb.xmin} " + \
+            f"{bb.ymin} " + \
+            f"{bb.width} " + \
+            f"{bb.height}"
+        self.write(f"<svg width='{bb.width}cm' " +
                    f"viewBox='{viewBox}' " +
-                   f"height='{bb.height + self._margin}' " +
+                   f"height='{bb.height}cm' " +
                    f"xmlns='http://www.w3.org/2000/svg'>")
 
     def print_rectangle(self, min, max, color=None, stroke_width=None):
@@ -236,8 +236,10 @@ class SvgPrinter:
 
     def dump_profile_to_svg(self):
         self.print_header(self._edges.bb)
+        self.start_group(0, "Global rectangle")
         self.print_rectangle(self._edges.bb.lowerleft,
                              self._edges.bb.upperright)
+        self.end_group()
         for an_edge in self._edges.edges:
             self.print_segment(an_edge.origin, an_edge.dest)
         self.close()
@@ -245,8 +247,10 @@ class SvgPrinter:
     def dump_plates_to_svg(self):
         plates = self._edges.plates
         self.print_header(plates.bb)
+        self.start_group(0, "Global rectangle")
         self.print_rectangle(plates.bb.lowerleft, plates.bb.upperright,
                              color="red")
+        self.end_group()
         for id_plate, a_plate in enumerate(plates):
             a_plate.dump_to_svg(self, f"layer{id_plate}")
         self.close()
@@ -434,14 +438,14 @@ class Plate(BoundingBox):
                 next_length = border_type.upper
             next_segment = direction.mult(next_length)
             next_position = position.add(next_segment)
-            a_printer.print_segment(position, next_position, stroke_width=0.1)
+            a_printer.print_segment(position, next_position)
             length_done += next_segment.length()
             if length_done >= (1-precision)*length_todo and \
                border_type.style == PlateBorderStyle.CRENELATED_CAVING_IN:
                 break
             last_segment = perpendicular.mult(border_type.depth * (1 if is_upper else -1))
             last_position = next_position.add(last_segment)
-            a_printer.print_segment(next_position, last_position, stroke_width=0.1)
+            a_printer.print_segment(next_position, last_position)
             position = last_position
             is_upper = not(is_upper)
 
@@ -617,7 +621,7 @@ class Edges:
                 else:
                     hole_end = an_edge.dest
                 holes.append(Hole(hole_start, hole_end, PlateBorderType.straight()))
-        # print("holes", holes)
+        print("holes", holes)
         self._plates.append(Plate(self.bb.lowerleft, self.bb.upperright,
                                   label="Bottom Plate", depth=self.depth, min_width=self.min_width,
                                   border_types=[ PlateBorderType.crenelated_protruding() ] * 4,
@@ -675,38 +679,40 @@ if __name__ == '__main__':
     test_cases = []
     ########################################################
     # Test cases
-    # Only a rectangle
-    tc1 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+
+    # # Only a rectangle
+    # tc1 = Edges(P(0,0), P(10,10), height=3)
     # test_cases.append(tc1)
-    # Rectangle with horizontal inner separation
-    tc2 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
-    tc2.add_edge(Edge(P(0,5),P(10,5)))
+
+    # # Rectangle with horizontal inner separation
+    # tc2 = Edges(P(0,0), P(10,10), height=3)
+    # tc2.add_edge(Edge(P(0,5),P(10,5)))
     # test_cases.append(tc2)
-    # Rectangle with vertical inner separation
-    tc3 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
-    tc3.add_edge(Edge(P(5,0),P(5,10)))
+
+    # # Rectangle with vertical inner separation
+    # tc3 = Edges(P(0,0), P(10,10), height=3)
+    # tc3.add_edge(Edge(P(5,0),P(5,10)))
     # test_cases.append(tc3)
-    # Rectangle with vertical inner separation, not in the middle
-    tc4 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
-    tc4.add_edge(Edge(P(6.5,0),P(6.5,10)))
+
+    # # Rectangle with vertical inner separation, not in the middle
+    # tc4 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    # tc4.add_edge(Edge(P(6.5,0),P(6.5,10)))
     # test_cases.append(tc4)
-    # Rectangle with two perpendicular separations
-    tc5 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
-    tc5.add_edge(Edge(P(5,0),P(5,10)))
-    tc5.add_edge(Edge(P(5,7),P(10,7)))
-    test_cases.append(tc5)
+
     # # Rectangle with three separations not meeting
-    # tc6 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
-    # tc6.add_edge(Edge(P(5,0),P(5,10)))
-    # tc6.add_edge(Edge(P(5,7),P(10,7)))
-    # tc6.add_edge(Edge(P(0,3),P(5,3)))
-    # test_cases.append(tc6)
-    # # Rectangle with three separations meeting at the same height
-    # tc7 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
-    # tc7.add_edge(Edge(P(5,0),P(5,10)))
-    # tc7.add_edge(Edge(P(5,7),P(10,7)))
-    # tc7.add_edge(Edge(P(0,7),P(5,7)))
-    # test_cases.append(tc7)
+    # tc5 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    # tc5.add_edge(Edge(P(5,0),P(5,10)))
+    # tc5.add_edge(Edge(P(5,7),P(10,7)))
+    # tc5.add_edge(Edge(P(0,3),P(5,3)))
+    # test_cases.append(tc5)
+
+    # Rectangle with three separations meeting at the same height
+    tc6 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    tc6.add_edge(Edge(P(5,0),P(5,10)))
+    tc6.add_edge(Edge(P(5,5),P(10,5)))
+    tc6.add_edge(Edge(P(0,5),P(5,5)))
+    test_cases.append(tc6)
+
     ########################################################
     # Tests
     for tc in test_cases:
@@ -722,4 +728,4 @@ if __name__ == '__main__':
 ################################################################
 # Test usage :
 # clear && ./lc2.py && cat file.svg && inkview file.svg &> /dev/null
-# clear && ./lc2.py && cat profile.svg && inkview -s 10 plates.svg &> /dev/null
+# clear && ./lc2.py && cat profile.svg && inkview -s 0.5 plates.svg &> /dev/null
