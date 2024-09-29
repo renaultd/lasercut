@@ -35,6 +35,16 @@ class Point:
     def max(self, other):
         return Point(max(self.x, other.x), max(self.y, other.y))
 
+    def __eq__(self, other):
+        """Overrides the default implementation"""
+        if isinstance(other, Point):
+            return self.x == other.x and self.y == other.y
+        return False
+
+    def __ne__(self, other):
+        """Overrides the default implementation (unnecessary in Python 3)"""
+        return not self.__eq__(other)
+
     def __repr__(self):
         return f"({self.x},{self.y})"
 
@@ -287,13 +297,15 @@ class PlateBorderType:
         self._style = style
         self._start_offset = start
         self._end_offset = end
-
+        self._depth = None
     @property
     def style(self): return self._style
     @property
     def start_offset(self): return self._start_offset
     @property
     def end_offset(self): return self._end_offset
+    @property
+    def depth(self): return self._depth
 
     @staticmethod
     def none():
@@ -302,11 +314,18 @@ class PlateBorderType:
     def straight(start=0, end=0):
         return PlateBorderType(PlateBorderStyle.STRAIGHT, start, end)
     @staticmethod
-    def crenelated_protruding(start=0, end=0):
-        return PlateBorderType(PlateBorderStyle.CRENELATED_PROTRUDING, start, end)
+    def crenelated_protruding(start=0, end=0, depth=None):
+        p = PlateBorderType(PlateBorderStyle.CRENELATED_PROTRUDING, start, end)
+        if depth:
+            p._depth = depth
+        return p
+
     @staticmethod
-    def crenelated_caving_in(start=0, end=0):
-        return PlateBorderType(PlateBorderStyle.CRENELATED_CAVING_IN, start, end)
+    def crenelated_caving_in(start=0, end=0, depth=None):
+        p = PlateBorderType(PlateBorderStyle.CRENELATED_CAVING_IN, start, end)
+        if depth:
+            p._depth = depth
+        return p
 
     def __repr__(self):
         return f"{PlateBorderStyle.__repr__(self._style)}," + \
@@ -413,60 +432,63 @@ class Plate(BoundingBox):
                 self.dump_holes_to_svg(a_printer, hole_start, hole_end, border)
         a_printer.end_group()
 
-    def dump_crenelation_to_svg(self, a_printer, border_type, min, max, precision=0.01):
-        assert border_type.style == PlateBorderStyle.CRENELATED_PROTRUDING or \
-            border_type.style == PlateBorderStyle.CRENELATED_CAVING_IN, \
+    def dump_crenelation_to_svg(self, a_printer, a_border, min, max, precision=0.01):
+        assert a_border.style == PlateBorderStyle.CRENELATED_PROTRUDING or \
+            a_border.style == PlateBorderStyle.CRENELATED_CAVING_IN, \
             "dump_to_svg: invalid crenelation"
         vector        = max.sub(min)
         direction     = vector.unit()
         perpendicular = direction.perp()
         length_done   = 0
-        length_todo   = vector.length() - border_type.start_offset - border_type.end_offset
-        if border_type.style == PlateBorderStyle.CRENELATED_PROTRUDING:
-            position      = min.add(direction.mult(border_type.start_offset))
+        length_todo   = vector.length() - a_border.start_offset - a_border.end_offset
+        if a_border.style == PlateBorderStyle.CRENELATED_PROTRUDING:
+            position      = min.add(direction.mult(a_border.start_offset))
             is_upper      = True
         else:
-            position      = min.add(direction.mult(border_type.start_offset)).\
-                add(perpendicular.mult(border_type.depth))
+            position      = min.add(direction.mult(a_border.start_offset)).\
+                add(perpendicular.mult(a_border.depth))
             is_upper      = False
-        for i in range(border_type.sides):
+        for i in range(a_border.sides):
             if i == 0:
-                next_length = border_type.upper - border_type.start_offset
-            elif i == border_type.sides-1:
-                next_length = border_type.upper - border_type.end_offset
+                next_length = a_border.upper - a_border.start_offset
+            elif i == a_border.sides-1:
+                next_length = a_border.upper - a_border.end_offset
             else:
-                next_length = border_type.upper
+                next_length = a_border.upper
             next_segment = direction.mult(next_length)
             next_position = position.add(next_segment)
             a_printer.print_segment(position, next_position)
             length_done += next_segment.length()
             if length_done >= (1-precision)*length_todo and \
-               border_type.style == PlateBorderStyle.CRENELATED_CAVING_IN:
+               a_border.style == PlateBorderStyle.CRENELATED_CAVING_IN:
                 break
-            last_segment = perpendicular.mult(border_type.depth * (1 if is_upper else -1))
+            # # HERE DEPTH
+            # if a_border.depth:
+            #     print("DEPTH", a_border, a_border.depth)
+            last_segment = perpendicular.mult(a_border.depth * (1 if is_upper else -1))
             last_position = next_position.add(last_segment)
             a_printer.print_segment(next_position, last_position)
             position = last_position
             is_upper = not(is_upper)
 
-    def dump_segment_to_svg(self, a_printer, min, max, border_type, precision=0.01):
+    def dump_segment_to_svg(self, a_printer, min, max, a_border, precision=0.01):
         a_printer.set_color("blue")
-        match border_type.style:
+        match a_border.style:
             case PlateBorderStyle.NONE:
                 pass
             case PlateBorderStyle.STRAIGHT:
                 vector = max.sub(min)
                 direction = vector.unit()
-                a_printer.print_segment(min.add(direction.mult(border_type.start_offset)),
-                                        max.sub(direction.mult(border_type.end_offset)))
+                a_printer.print_segment(min.add(direction.mult(a_border.start_offset)),
+                                        max.sub(direction.mult(a_border.end_offset)))
             case PlateBorderStyle.CRENELATED_PROTRUDING:
-                self.dump_crenelation_to_svg(a_printer, border_type, min, max, precision=precision)
+                self.dump_crenelation_to_svg(a_printer, a_border, min, max, precision=precision)
             case PlateBorderStyle.CRENELATED_CAVING_IN:
-                self.dump_crenelation_to_svg(a_printer, border_type, min, max, precision=precision)
+                self.dump_crenelation_to_svg(a_printer, a_border, min, max, precision=precision)
             case _:
                 assert False, f"dump_segment_to_svg: unknown type {type}"
 
-    def dump_holes_to_svg(self, a_printer, min, max, border_type):
+    def dump_holes_to_svg(self, a_printer, min, max, a_border):
         """ Print the rectangles corresponding to holes inside a plate
             min and max correspond to the extremities of the edge
         """
@@ -476,17 +498,17 @@ class Plate(BoundingBox):
         position      = min
         is_upper      = False # Do we print the hole ?
         length_done   = 0
-        # print(direction, perpendicular, position, border_type.upper)
-        # length_todo   = vector.length() - border_type.start_offset - border_type.end_offset
-        for i in range(border_type.sides):
-            next_length = border_type.upper
+        # print(direction, perpendicular, position, a_border.upper)
+        # length_todo   = vector.length() - a_border.start_offset - a_border.end_offset
+        for i in range(a_border.sides):
+            next_length = a_border.upper
             next_segment = direction.mult(next_length)
             next_position = position.add(next_segment)
             if (is_upper):
-                # print("C1", position.add(perpendicular.mult(border_type.depth/2)))
-                # print("C2", next_position.add(perpendicular.mult(-border_type.depth/2)))
-                a_printer.print_rectangle(position.add(perpendicular.mult(border_type.depth/2)),
-                                          next_position.add(perpendicular.mult(-border_type.depth/2)))
+                # print("C1", position.add(perpendicular.mult(a_border.depth/2)))
+                # print("C2", next_position.add(perpendicular.mult(-a_border.depth/2)))
+                a_printer.print_rectangle(position.add(perpendicular.mult(a_border.depth/2)),
+                                          next_position.add(perpendicular.mult(-a_border.depth/2)))
             length_done += next_segment.length()
             position = next_position
             is_upper = not(is_upper)
@@ -606,6 +628,12 @@ class Edges:
     def is_attached_to_inside_edge(self, a_point):
         return any(an_edge.contains(a_point) for an_edge in self._edges[4:])
 
+    def is_meeting_multiple_edges(self, a_point):
+        def edges_meeting_at(a_point):
+            return [ an_edge for an_edge in self._edges[4:] if (an_edge.origin == a_point) or (an_edge.dest == a_point) ]
+        # print(a_point, edges_meeting_at(a_point))
+        return len(edges_meeting_at(a_point)) > 1
+
     def compute_plates(self):
         # Add the global plate
         holes = [ ]
@@ -634,32 +662,42 @@ class Edges:
             3: "Left Plate",
         }
         for id_edge, an_edge in enumerate(self.edges):
-            label = labels[id_edge] if id_edge in labels else "Inner Plate"
-            if label != "Inner Plate": # The border plates
-                bts = [
-                    PlateBorderType.crenelated_caving_in(start=self.depth),
-                    PlateBorderType.crenelated_protruding(start=self.depth),
-                    PlateBorderType.straight(end=self.depth),
-                    PlateBorderType.crenelated_caving_in(end=self.depth),
-                ]
-            else: # The inner plates
-                bts = [
-                    PlateBorderType.crenelated_caving_in(start=self.depth, end=self.depth),
-                    PlateBorderType.crenelated_caving_in(start=self.depth),
-                    PlateBorderType.straight(start=self.depth, end=self.depth),
-                    PlateBorderType.crenelated_caving_in(end=self.depth),
-                ]
-            holes = [ Hole(P(a_length,0), P(a_length,self.height),
-                           PlateBorderType.straight())
-                      for a_length in an_edge.attached_lengths ]
+            # Compute concrete edge length (takt into account attachments
             length = an_edge.length
             print(an_edge,
-                  "ATTACHED MIN", self.is_attached_to_inside_edge(an_edge.min),
-                  "MAX", self.is_attached_to_inside_edge(an_edge.max))
+                  "ATTACHED MIN?:", self.is_attached_to_inside_edge(an_edge.min),
+                  "ATTACHED MAX?:", self.is_attached_to_inside_edge(an_edge.max),
+                  "MULTIPLE MIN?:", self.is_meeting_multiple_edges(an_edge.min),
+                  "MULTIPLE MAX?:", self.is_meeting_multiple_edges(an_edge.max))
             if self.is_attached_to_inside_edge(an_edge.min):
                 length += self.depth / 2
             if self.is_attached_to_inside_edge(an_edge.max):
                 length += self.depth / 2
+
+            label = labels[id_edge] if id_edge in labels else "Inner Plate"
+            if label != "Inner Plate": # The border plates
+                bts = [
+                    PlateBorderType.crenelated_caving_in(start=self.depth),  # Bottom
+                    PlateBorderType.crenelated_protruding(start=self.depth), # Right
+                    PlateBorderType.straight(end=self.depth),                # Top
+                    PlateBorderType.crenelated_caving_in(end=self.depth),    # Left
+                ]
+            else: # The inner plates
+                if self.is_meeting_multiple_edges(an_edge.max):
+                    right_depth = self.depth / 2
+                else:
+                    right_depth = self.depth
+                bts = [
+                    PlateBorderType.crenelated_caving_in(start=self.depth, end=self.depth),
+                    PlateBorderType.crenelated_caving_in(start=self.depth, depth=self.depth), # Right
+                    PlateBorderType.straight(start=self.depth, end=self.depth), # Top
+                    PlateBorderType.crenelated_caving_in(end=self.depth),       # Left
+                ]
+
+            # Compute the holes
+            holes = [ Hole(P(a_length,0), P(a_length,self.height),
+                           PlateBorderType.straight())
+                      for a_length in an_edge.attached_lengths ]
             self._plates.append(Plate(P(0, 0), P(length, self.height),
                                       label=label, depth=self.depth, min_width=self.min_width,
                                       border_types=bts, holes=holes))
