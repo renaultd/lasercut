@@ -188,7 +188,7 @@ class Hole(Edge):
 class SvgPrinter:
     """ A class that represents a svg printer object """
     def __init__(self, edges, filename, margin = 10,
-                 color="black", stroke_width=0.1):
+                 color="black", stroke_width=0.01):
         self._edges = edges
         self._file = open(filename, "w")
         self._margin = margin
@@ -328,8 +328,9 @@ class PlateBorderType:
         return p
 
     def __repr__(self):
-        return f"{PlateBorderStyle.__repr__(self._style)}," + \
-            f"start={self._start_offset},end={self._end_offset}"
+        d_str = f",depth={self._depth}" if self._depth else ""
+        return f"Style({PlateBorderStyle.__repr__(self._style)}," + \
+            f"start={self._start_offset},end={self._end_offset}{d_str})"
 
 
 ################################################################
@@ -354,13 +355,16 @@ class PlateBorder:
         self._depth = depth
 
     @property
+    def type(self):        return self._type
+    @property
     def style(self):        return self._type.style
     @property
     def upper(self):        return self._upper
     @property
     def lower(self):        return self._lower
     @property
-    def depth(self):        return self._depth
+    def depth(self):
+        return self._depth
     @property
     def start_offset(self): return self._type.start_offset
     @property
@@ -414,16 +418,16 @@ class Plate(BoundingBox):
             self._holes[i].translate(a_point)
 
     def dump_to_svg(self, a_printer, an_id):
-        print("Dumping plate to svg", self.lowerleft, self.upperright)
+        # print("Dumping plate to svg", self.lowerleft, self.upperright)
         a_printer.start_group(an_id, f"Layer {self.label}")
         self.dump_segment_to_svg(a_printer, self.lowerleft,  self.lowerright, self._borders[0])
         self.dump_segment_to_svg(a_printer, self.lowerright, self.upperright, self._borders[1])
         self.dump_segment_to_svg(a_printer, self.upperright, self.upperleft,  self._borders[2])
         self.dump_segment_to_svg(a_printer, self.upperleft,  self.lowerleft,  self._borders[3])
         if len(self._holes) > 0:
-            print(self._holes)
-            ltor = self.lowerright.sub(self.lowerleft).unit()
-            dtou = self.upperleft.sub(self.lowerleft)
+            # print(self._holes)
+            # ltor = self.lowerright.sub(self.lowerleft).unit()
+            # dtou = self.upperleft.sub(self.lowerleft)
             for an_edge in self._holes:
                 hole_start = an_edge.origin
                 hole_end   = an_edge.dest
@@ -462,10 +466,9 @@ class Plate(BoundingBox):
             if length_done >= (1-precision)*length_todo and \
                a_border.style == PlateBorderStyle.CRENELATED_CAVING_IN:
                 break
-            # # HERE DEPTH
-            # if a_border.depth:
-            #     print("DEPTH", a_border, a_border.depth)
-            last_segment = perpendicular.mult(a_border.depth * (1 if is_upper else -1))
+            # HERE DEPTH
+            here_depth = a_border.type.depth if a_border.type.depth else a_border.depth
+            last_segment = perpendicular.mult(here_depth * (1 if is_upper else -1))
             last_position = next_position.add(last_segment)
             a_printer.print_segment(next_position, last_position)
             position = last_position
@@ -666,9 +669,9 @@ class Edges:
             length = an_edge.length
             print(an_edge,
                   "ATTACHED MIN?:", self.is_attached_to_inside_edge(an_edge.min),
-                  "ATTACHED MAX?:", self.is_attached_to_inside_edge(an_edge.max),
+                  "MAX?:", self.is_attached_to_inside_edge(an_edge.max),
                   "MULTIPLE MIN?:", self.is_meeting_multiple_edges(an_edge.min),
-                  "MULTIPLE MAX?:", self.is_meeting_multiple_edges(an_edge.max))
+                  "MAX?:", self.is_meeting_multiple_edges(an_edge.max))
             if self.is_attached_to_inside_edge(an_edge.min):
                 length += self.depth / 2
             if self.is_attached_to_inside_edge(an_edge.max):
@@ -687,11 +690,15 @@ class Edges:
                     right_depth = self.depth / 2
                 else:
                     right_depth = self.depth
+                if self.is_meeting_multiple_edges(an_edge.min):
+                    left_depth = self.depth / 2
+                else:
+                    left_depth = self.depth
                 bts = [
                     PlateBorderType.crenelated_caving_in(start=self.depth, end=self.depth),
-                    PlateBorderType.crenelated_caving_in(start=self.depth, depth=self.depth), # Right
+                    PlateBorderType.crenelated_caving_in(start=self.depth, depth=right_depth), # Right
                     PlateBorderType.straight(start=self.depth, end=self.depth), # Top
-                    PlateBorderType.crenelated_caving_in(end=self.depth),       # Left
+                    PlateBorderType.crenelated_caving_in(end=self.depth, depth=left_depth),    # Left
                 ]
 
             # Compute the holes
@@ -699,7 +706,8 @@ class Edges:
                            PlateBorderType.straight())
                       for a_length in an_edge.attached_lengths ]
             self._plates.append(Plate(P(0, 0), P(length, self.height),
-                                      label=label, depth=self.depth, min_width=self.min_width,
+                                      label=label, depth=self.depth,
+                                      min_width=self.min_width,
                                       border_types=bts, holes=holes))
 
     def dump_profile_to_svg(self, filename):
@@ -745,10 +753,10 @@ if __name__ == '__main__':
     # test_cases.append(tc5)
 
     # Rectangle with three separations meeting at the same height
-    tc6 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
-    tc6.add_edge(Edge(P(5,0),P(5,10)))
-    tc6.add_edge(Edge(P(5,5),P(10,5)))
-    tc6.add_edge(Edge(P(0,5),P(5,5)))
+    tc6 = Edges(P(0,0), P(10,10), height=3, min_width=1)
+    tc6.add_edge(Edge(P(4,0),P(4,10)))
+    tc6.add_edge(Edge(P(4,2),P(10,2)))
+    tc6.add_edge(Edge(P(0,2),P(4,2)))
     test_cases.append(tc6)
 
     ########################################################
