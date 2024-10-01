@@ -579,7 +579,7 @@ class Plates:
     def margin(self): return self._margin
 
     def is_empty(self):
-        return len(self._plates) <= 1
+        return len(self._plates) <= 0
 
     def append(self, a_plate):
         """Appends a plate to a list of existing plates. Should
@@ -609,7 +609,7 @@ class Edges:
     """
 
     def __init__(self, min, max, height=10, depth=0.5, min_width=None,
-                 bottom=True):
+                 bottom=True, edges=True):
         self._bb    = BoundingBox(min, max)
         self._edges = [
             Edge(P(self.bb.xmin, self.bb.ymin), P(self.bb.xmax, self.bb.ymin)),
@@ -617,11 +617,12 @@ class Edges:
             Edge(P(self.bb.xmax, self.bb.ymax), P(self.bb.xmin, self.bb.ymax)),
             Edge(P(self.bb.xmin, self.bb.ymax), P(self.bb.xmin, self.bb.ymin)),
         ]
-        self._height = height
-        self._depth  = depth
-        self._min_width = min_width if min_width else 2*depth
-        self._bottom = bottom
-        self._plates = Plates()
+        self._height     = height
+        self._depth      = depth
+        self._min_width  = min_width if min_width else 2*depth
+        self._has_bottom = bottom and edges # FIXME: bottom without edges ?
+        self._has_edges  = edges
+        self._plates     = Plates()
 
     @property
     def bb(self):           return self._bb
@@ -640,8 +641,9 @@ class Edges:
         assert not(self._plates.is_empty()), "Edges : plates not computed"
         return self._plates
     @property
-    def has_bottom(self):
-        return self._bottom
+    def has_bottom(self):   return self._has_bottom
+    @property
+    def has_edges(self):    return self._has_edges
 
     # Add an edge to the subdivision
     # The edge is supposed to be attached to two existing edges
@@ -748,11 +750,17 @@ class Edges:
                     left_depth = self.depth
                 bottom_edge = PlateBorderType.crenelated_caving_in(start=self.depth, end=self.depth) \
                     if self.has_bottom else PlateBorderType.straight(start=self.depth, end=self.depth)
-                right_edge  = PlateBorderType.crenelated_caving_in(start=self.depth, depth=right_depth) \
-                    if self.has_bottom else PlateBorderType.crenelated_caving_in(start=0, depth=right_depth)
+                right_edge  = {
+                    (True, False):  PlateBorderType.crenelated_caving_in(start=self.depth, depth=right_depth),
+                    (False, False): PlateBorderType.crenelated_caving_in(start=0, depth=right_depth),
+                    (False, True):  PlateBorderType.straight(),
+                }[self.has_bottom, not(self.has_edges) and self.is_attached_to_border(an_edge.dest)]
                 top_edge    = PlateBorderType.straight(start=self.depth, end=self.depth)
-                left_edge   = PlateBorderType.crenelated_caving_in(end=self.depth, depth=left_depth) \
-                    if self.has_bottom else PlateBorderType.crenelated_caving_in(end=0, depth=left_depth)
+                left_edge   = {
+                    (True, False):  PlateBorderType.crenelated_caving_in(end=self.depth, depth=left_depth),
+                    (False, False): PlateBorderType.crenelated_caving_in(end=0, depth=left_depth),
+                    (False, True):  PlateBorderType.straight(),
+               }[self.has_bottom, not(self.has_edges) and self.is_attached_to_border(an_edge.origin)]
                 bts = [
                     bottom_edge, right_edge, top_edge, left_edge,
                 ]
@@ -761,10 +769,11 @@ class Edges:
             holes = [ Hole(P(a_length,0), P(a_length,self.height),
                            PlateBorderType.straight())
                       for a_length in an_edge.attached_lengths ]
-            self._plates.append(Plate(P(0, 0), P(length, self.height),
-                                      label=label, depth=self.depth,
-                                      min_width=self.min_width,
-                                      border_types=bts, holes=holes))
+            if label == "Inner Plate" or self.has_edges:
+                self._plates.append(Plate(P(0, 0), P(length, self.height),
+                                          label=label, depth=self.depth,
+                                          min_width=self.min_width,
+                                          border_types=bts, holes=holes))
 
     def dump_profile_to_svg(self, filename):
         SvgPrinter(self, filename).dump_profile_to_svg()
@@ -783,53 +792,65 @@ if __name__ == '__main__':
     # Test cases
 
     # # Only a rectangle
-    # tc1 = Edges(P(0,0), P(10,10), height=3, bottom=False)
+    # tc1 = Edges(P(0,0), P(10,10), height=3, bottom=False, edges=False)
     # test_cases.append(tc1)
 
     # # Rectangle with horizontal inner separation
-    # tc2 = Edges(P(0,0), P(10,10), height=3, bottom=False)
+    # tc2 = Edges(P(0,0), P(10,10), height=3, bottom=False, edges=False)
     # tc2.add_edge(Edge(P(0,5),P(10,5)))
     # test_cases.append(tc2)
 
     # # Rectangle with vertical inner separation
-    # tc3 = Edges(P(0,0), P(10,10), height=3, bottom=False)
+    # tc3 = Edges(P(0,0), P(10,10), height=3, bottom=False, edges=False)
     # tc3.add_edge(Edge(P(5,0),P(5,10)))
     # test_cases.append(tc3)
 
     # # Rectangle with vertical inner separation, not in the middle
-    # tc4 = Edges(P(0,0), P(10,10), height=3, min_width=2.5, bottom=False)
+    # tc4 = Edges(P(0,0), P(10,10), height=3, min_width=2.5, bottom=False, edges=False)
     # tc4.add_edge(Edge(P(6.5,0),P(6.5,10)))
     # test_cases.append(tc4)
 
     # # Rectangle with three separations not meeting
-    # tc5 = Edges(P(0,0), P(10,10), height=3, min_width=2.5, bottom=False)
+    # tc5 = Edges(P(0,0), P(10,10), height=3, min_width=2.5, bottom=False, edges=False)
     # tc5.add_edge(Edge(P(5,0),P(5,10)))
     # tc5.add_edge(Edge(P(5,7),P(10,7)))
     # tc5.add_edge(Edge(P(0,3),P(5,3)))
     # test_cases.append(tc5)
 
     # # Rectangle with three separations meeting at the same height
-    # tc6 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=False)
+    # tc6 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=False, edges=False)
     # tc6.add_edge(Edge(P(4,0),P(4,10)))
     # tc6.add_edge(Edge(P(4,2),P(10,2)))
     # tc6.add_edge(Edge(P(0,2),P(4,2)))
     # test_cases.append(tc6)
 
-    # Rectangle with three separations meeting at the same width
-    tc7 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=True)
-    tc7.add_edge(Edge(P(0,4),P(10,4)))
-    tc7.add_edge(Edge(P(7,0),P(7,4)))
-    tc7.add_edge(Edge(P(7,10),P(7,4)))
-    test_cases.append(tc7)
+    # # Rectangle with three separations meeting at the same width
+    # tc7 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=False, edges=False)
+    # tc7.add_edge(Edge(P(0,4),P(10,4)))
+    # tc7.add_edge(Edge(P(7,0),P(7,4)))
+    # tc7.add_edge(Edge(P(7,10),P(7,4)))
+    # test_cases.append(tc7)
 
-    # Rectangle with five separations meeting at the same height
-    tc8 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=True)
-    tc8.add_edge(Edge(P(4,0),P(4,10)))
-    tc8.add_edge(Edge(P(6.5,0),P(6.5,10)))
-    tc8.add_edge(Edge(P(6.5,2),P(10,2)))
-    tc8.add_edge(Edge(P(4,2),P(6.5,2)))
-    tc8.add_edge(Edge(P(0,2),P(4,2)))
-    test_cases.append(tc8)
+    # # Rectangle with five separations meeting at the same height
+    # tc8 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=False, edges=False)
+    # tc8.add_edge(Edge(P(4,0),P(4,10)))
+    # tc8.add_edge(Edge(P(6.5,0),P(6.5,10)))
+    # tc8.add_edge(Edge(P(6.5,2),P(10,2)))
+    # tc8.add_edge(Edge(P(4,2),P(6.5,2)))
+    # tc8.add_edge(Edge(P(0,2),P(4,2)))
+    # test_cases.append(tc8)
+
+    # # Rectangle with eight separations creating a tic-tac-toe
+    tc9 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=False, edges=False)
+    tc9.add_edge(Edge(P(3,0),P(3,10)))
+    tc9.add_edge(Edge(P(6,0),P(6,10)))
+    tc9.add_edge(Edge(P(0,4),P(3,4)))
+    tc9.add_edge(Edge(P(3,4),P(6,4)))
+    tc9.add_edge(Edge(P(6,4),P(10,4)))
+    tc9.add_edge(Edge(P(0,7),P(3,7)))
+    tc9.add_edge(Edge(P(3,7),P(6,7)))
+    tc9.add_edge(Edge(P(6,7),P(10,7)))
+    test_cases.append(tc9)
 
     ########################################################
     # Tests
