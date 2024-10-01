@@ -665,13 +665,13 @@ class Edges:
             3: "Left Plate",
         }
         for id_edge, an_edge in enumerate(self.edges):
-            # Compute concrete edge length (takt into account attachments
+            # Compute concrete edge length (taking into account attachments)
             length = an_edge.length
-            print(an_edge,
-                  "ATTACHED MIN?:", self.is_attached_to_inside_edge(an_edge.min),
-                  "MAX?:", self.is_attached_to_inside_edge(an_edge.max),
-                  "MULTIPLE MIN?:", self.is_meeting_multiple_edges(an_edge.min),
-                  "MAX?:", self.is_meeting_multiple_edges(an_edge.max))
+            # print(an_edge,
+            #       "ATTACHED MIN?:", self.is_attached_to_inside_edge(an_edge.min),
+            #       "MAX?:", self.is_attached_to_inside_edge(an_edge.max),
+            #       "MULTIPLE MIN?:", self.is_meeting_multiple_edges(an_edge.min),
+            #       "MAX?:", self.is_meeting_multiple_edges(an_edge.max))
             if self.is_attached_to_inside_edge(an_edge.min):
                 length += self.depth / 2
             if self.is_attached_to_inside_edge(an_edge.max):
@@ -752,12 +752,29 @@ if __name__ == '__main__':
     # tc5.add_edge(Edge(P(0,3),P(5,3)))
     # test_cases.append(tc5)
 
-    # Rectangle with three separations meeting at the same height
-    tc6 = Edges(P(0,0), P(10,10), height=3, min_width=1)
-    tc6.add_edge(Edge(P(4,0),P(4,10)))
-    tc6.add_edge(Edge(P(4,2),P(10,2)))
-    tc6.add_edge(Edge(P(0,2),P(4,2)))
-    test_cases.append(tc6)
+    # # Rectangle with three separations meeting at the same height
+    # tc6 = Edges(P(0,0), P(10,10), height=3, min_width=1)
+    # tc6.add_edge(Edge(P(4,0),P(4,10)))
+    # tc6.add_edge(Edge(P(4,2),P(10,2)))
+    # tc6.add_edge(Edge(P(0,2),P(4,2)))
+    # test_cases.append(tc6)
+
+    # # Rectangle with three separations meeting at the same width
+    # tc7 = Edges(P(0,0), P(10,10), height=3, min_width=1)
+    # tc7.add_edge(Edge(P(0,4),P(10,4)))
+    # tc7.add_edge(Edge(P(7,0),P(7,4)))
+    # tc7.add_edge(Edge(P(7,10),P(7,4)))
+    # test_cases.append(tc7)
+
+
+    # Rectangle with five separations meeting at the same height
+    tc8 = Edges(P(0,0), P(10,10), height=3, min_width=1)
+    tc8.add_edge(Edge(P(4,0),P(4,10)))
+    tc8.add_edge(Edge(P(6.5,0),P(6.5,10)))
+    tc8.add_edge(Edge(P(6.5,2),P(10,2)))
+    tc8.add_edge(Edge(P(4,2),P(6.5,2)))
+    tc8.add_edge(Edge(P(0,2),P(4,2)))
+    test_cases.append(tc8)
 
     ########################################################
     # Tests
