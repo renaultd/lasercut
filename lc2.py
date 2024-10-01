@@ -565,7 +565,8 @@ class Edges:
 
     """
 
-    def __init__(self, min, max, height=10, depth=0.5, min_width=None):
+    def __init__(self, min, max, height=10, depth=0.5, min_width=None,
+                 bottom=True):
         self._bb    = BoundingBox(min, max)
         self._edges = [
             Edge(P(self.bb.xmin, self.bb.ymin), P(self.bb.xmax, self.bb.ymin)),
@@ -576,6 +577,7 @@ class Edges:
         self._height = height
         self._depth  = depth
         self._min_width = min_width if min_width else 2*depth
+        self._bottom = bottom
         self._plates = Plates()
 
     @property
@@ -638,25 +640,26 @@ class Edges:
         return len(edges_meeting_at(a_point)) > 1
 
     def compute_plates(self):
-        # Add the global plate
-        holes = [ ]
-        for id_edge, an_edge in enumerate(self.edges):
-            if id_edge >= 4: # Not the global border
-                vector = an_edge.dest.sub(an_edge.origin).unit()
-                if not(self.is_attached_to_border(an_edge.origin)):
-                    hole_start = an_edge.origin.add(vector.mult(-self.depth/2))
-                else:
-                    hole_start = an_edge.origin
-                if not(self.is_attached_to_border(an_edge.dest)):
-                    hole_end = an_edge.dest.add(vector.mult(self.depth/2))
-                else:
-                    hole_end = an_edge.dest
-                holes.append(Hole(hole_start, hole_end, PlateBorderType.straight()))
-        print("holes", holes)
-        self._plates.append(Plate(self.bb.lowerleft, self.bb.upperright,
-                                  label="Bottom Plate", depth=self.depth, min_width=self.min_width,
-                                  border_types=[ PlateBorderType.crenelated_protruding() ] * 4,
-                                  holes=holes))
+        # Add the global bottom plate
+        if self._bottom:
+            holes = [ ]
+            for id_edge, an_edge in enumerate(self.edges):
+                if id_edge >= 4: # Not the global border
+                    vector = an_edge.dest.sub(an_edge.origin).unit()
+                    if not(self.is_attached_to_border(an_edge.origin)):
+                        hole_start = an_edge.origin.add(vector.mult(-self.depth/2))
+                    else:
+                        hole_start = an_edge.origin
+                    if not(self.is_attached_to_border(an_edge.dest)):
+                        hole_end = an_edge.dest.add(vector.mult(self.depth/2))
+                    else:
+                        hole_end = an_edge.dest
+                    holes.append(Hole(hole_start, hole_end, PlateBorderType.straight()))
+            # print("holes", holes)
+            self._plates.append(Plate(self.bb.lowerleft, self.bb.upperright,
+                                      label="Bottom Plate", depth=self.depth, min_width=self.min_width,
+                                      border_types=[ PlateBorderType.crenelated_protruding() ] * 4,
+                                      holes=holes))
         # Add the border plates and inner plates
         labels = {
             0: "South Plate",
@@ -679,11 +682,15 @@ class Edges:
 
             label = labels[id_edge] if id_edge in labels else "Inner Plate"
             if label != "Inner Plate": # The border plates
+                bottom_edge = PlateBorderType.crenelated_caving_in(start=self.depth) \
+                    if self._bottom else PlateBorderType.straight(start=self.depth)
+                right_edge  = PlateBorderType.crenelated_protruding(start=self.depth) \
+                    if self._bottom else PlateBorderType.crenelated_protruding()
+                left_edge   = PlateBorderType.crenelated_caving_in(end=self.depth) \
+                    if self._bottom else PlateBorderType.crenelated_caving_in()
+                top_edge    = PlateBorderType.straight(end=self.depth)
                 bts = [
-                    PlateBorderType.crenelated_caving_in(start=self.depth),  # Bottom
-                    PlateBorderType.crenelated_protruding(start=self.depth), # Right
-                    PlateBorderType.straight(end=self.depth),                # Top
-                    PlateBorderType.crenelated_caving_in(end=self.depth),    # Left
+                    bottom_edge, right_edge, top_edge, left_edge,
                 ]
             else: # The inner plates
                 if self.is_meeting_multiple_edges(an_edge.max):
@@ -694,11 +701,15 @@ class Edges:
                     left_depth = self.depth / 2
                 else:
                     left_depth = self.depth
+                bottom_edge = PlateBorderType.crenelated_caving_in(start=self.depth, end=self.depth) \
+                    if self._bottom else PlateBorderType.straight(start=self.depth, end=self.depth)
+                right_edge  = PlateBorderType.crenelated_caving_in(start=self.depth, depth=right_depth) \
+                    if self._bottom else PlateBorderType.crenelated_caving_in(start=0, depth=right_depth)
+                top_edge    = PlateBorderType.straight(start=self.depth, end=self.depth)
+                left_edge   = PlateBorderType.crenelated_caving_in(end=self.depth, depth=left_depth) \
+                    if self._bottom else PlateBorderType.crenelated_caving_in(end=0, depth=left_depth)
                 bts = [
-                    PlateBorderType.crenelated_caving_in(start=self.depth, end=self.depth),
-                    PlateBorderType.crenelated_caving_in(start=self.depth, depth=right_depth), # Right
-                    PlateBorderType.straight(start=self.depth, end=self.depth), # Top
-                    PlateBorderType.crenelated_caving_in(end=self.depth, depth=left_depth),    # Left
+                    bottom_edge, right_edge, top_edge, left_edge,
                 ]
 
             # Compute the holes
@@ -727,48 +738,47 @@ if __name__ == '__main__':
     # Test cases
 
     # # Only a rectangle
-    # tc1 = Edges(P(0,0), P(10,10), height=3)
+    # tc1 = Edges(P(0,0), P(10,10), height=3, bottom=False)
     # test_cases.append(tc1)
 
     # # Rectangle with horizontal inner separation
-    # tc2 = Edges(P(0,0), P(10,10), height=3)
+    # tc2 = Edges(P(0,0), P(10,10), height=3, bottom=False)
     # tc2.add_edge(Edge(P(0,5),P(10,5)))
     # test_cases.append(tc2)
 
     # # Rectangle with vertical inner separation
-    # tc3 = Edges(P(0,0), P(10,10), height=3)
+    # tc3 = Edges(P(0,0), P(10,10), height=3, bottom=False)
     # tc3.add_edge(Edge(P(5,0),P(5,10)))
     # test_cases.append(tc3)
 
     # # Rectangle with vertical inner separation, not in the middle
-    # tc4 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    # tc4 = Edges(P(0,0), P(10,10), height=3, min_width=2.5, bottom=False)
     # tc4.add_edge(Edge(P(6.5,0),P(6.5,10)))
     # test_cases.append(tc4)
 
     # # Rectangle with three separations not meeting
-    # tc5 = Edges(P(0,0), P(10,10), height=3, min_width=2.5)
+    # tc5 = Edges(P(0,0), P(10,10), height=3, min_width=2.5, bottom=False)
     # tc5.add_edge(Edge(P(5,0),P(5,10)))
     # tc5.add_edge(Edge(P(5,7),P(10,7)))
     # tc5.add_edge(Edge(P(0,3),P(5,3)))
     # test_cases.append(tc5)
 
     # # Rectangle with three separations meeting at the same height
-    # tc6 = Edges(P(0,0), P(10,10), height=3, min_width=1)
+    # tc6 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=False)
     # tc6.add_edge(Edge(P(4,0),P(4,10)))
     # tc6.add_edge(Edge(P(4,2),P(10,2)))
     # tc6.add_edge(Edge(P(0,2),P(4,2)))
     # test_cases.append(tc6)
 
     # # Rectangle with three separations meeting at the same width
-    # tc7 = Edges(P(0,0), P(10,10), height=3, min_width=1)
+    # tc7 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=False)
     # tc7.add_edge(Edge(P(0,4),P(10,4)))
     # tc7.add_edge(Edge(P(7,0),P(7,4)))
     # tc7.add_edge(Edge(P(7,10),P(7,4)))
     # test_cases.append(tc7)
 
-
     # Rectangle with five separations meeting at the same height
-    tc8 = Edges(P(0,0), P(10,10), height=3, min_width=1)
+    tc8 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=False)
     tc8.add_edge(Edge(P(4,0),P(4,10)))
     tc8.add_edge(Edge(P(6.5,0),P(6.5,10)))
     tc8.add_edge(Edge(P(6.5,2),P(10,2)))
