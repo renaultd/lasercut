@@ -55,7 +55,26 @@ def P(x: float,y: float) -> Point:
 
 
 ################################################################
-class BoundingBox:
+class PairOfPoints:
+    """A class representing a set of 2 points """
+    def __init__(self, min: Point, max: Point):
+        self._min = min
+        self._max = max
+
+    # Side-effects methods
+    def union(self, other: PairOfPoints) -> None:
+        self._min = self._min.min(other._min)
+        self._max = self._max.max(other._max)
+
+    def translate(self, a_point: Point) -> None:
+        self._min = self._min.add(a_point)
+        self._max = self._max.add(a_point)
+    def translate_to_origin(self) -> None:
+        self.translate(self._min)
+
+
+################################################################
+class BoundingBox(PairOfPoints):
     """A class that represents a 2D bounding box
 
     Nothing forces min and max to be ordered in the plane, they are
@@ -63,13 +82,10 @@ class BoundingBox:
 
     """
     def __init__(self, min: Point, max: Point):
-        self._min = min
-        self._max = max
+        super().__init__(min, max)
+        assert min.x <= max.x, f"Ill-formed bounding box : {min} ?<= {max}"
+        assert min.y <= max.y, f"Ill-formed bounding box : {min} ?<= {max}"
 
-    @property
-    def min(self) -> Point:  return self._min
-    @property
-    def max(self) -> Point:  return self._max
     @property
     def xmin(self) -> float: return self._min.x
     @property
@@ -78,6 +94,11 @@ class BoundingBox:
     def ymin(self) -> float: return self._min.y
     @property
     def ymax(self) -> float: return self._max.y
+
+    @property
+    def min(self) -> Point:  return self._min
+    @property
+    def max(self) -> Point:  return self._max
     @property
     def lowerleft(self) -> Point: return self._min
     @property
@@ -91,23 +112,12 @@ class BoundingBox:
     @property
     def height(self) -> float: return self._max.y - self._min.y
 
-    # Side-effects methods
-    def union(self, other: BoundingBox) -> None:
-        self._min = self._min.min(other.min)
-        self._max = self._max.max(other.max)
-
-    def translate(self, a_point: Point) -> None:
-        self._min = self._min.add(a_point)
-        self._max = self._max.add(a_point)
-    def translate_to_origin(self) -> None:
-        self.translate(self._min)
-
     def __repr__(self) -> str:
         return f"BB(({self.xmin},{self.ymin})->({self.xmax},{self.ymax}))"
 
 
 ################################################################
-class Edge(BoundingBox):
+class Edge(PairOfPoints):
     """A class that represents an edge in a 2D-box
 
     It is *not* just a segment in the plane, it is a part of the
@@ -120,10 +130,21 @@ class Edge(BoundingBox):
         self._touch: list[Edge] = []    # Edges on the extremities
         self._attch: list[Edge] = []    # Other edges touching this one
 
+
     @property
     def origin(self) -> Point:   return self._min
     @property
     def dest(self) -> Point:     return self._max
+
+    @property
+    def xorigin(self) -> float: return self._min.x
+    @property
+    def xdest(self) -> float: return self._max.x
+    @property
+    def yorigin(self) -> float: return self._min.y
+    @property
+    def ydest(self) -> float: return self._max.y
+
     @property
     def length(self) -> float:
         return float(((self.dest.x-self.origin.x)**2. +
@@ -169,7 +190,7 @@ class Edge(BoundingBox):
         self._attch.append(edge)
 
     def __repr__(self) -> str:
-        return f"Edge(({self.xmin},{self.ymin})->({self.xmax},{self.ymax}))"
+        return f"Edge(({self.xorigin},{self.yorigin})->({self.xdest},{self.ydest}))"
 
 
 ################################################################
@@ -618,6 +639,9 @@ class Edges:
     def plates(self):
         assert not(self._plates.is_empty()), "Edges : plates not computed"
         return self._plates
+    @property
+    def has_bottom(self):
+        return self._bottom
 
     # Add an edge to the subdivision
     # The edge is supposed to be attached to two existing edges
@@ -658,12 +682,11 @@ class Edges:
     def is_meeting_multiple_edges(self, a_point):
         def edges_meeting_at(a_point):
             return [ an_edge for an_edge in self._edges[4:] if (an_edge.origin == a_point) or (an_edge.dest == a_point) ]
-        # print(a_point, edges_meeting_at(a_point))
         return len(edges_meeting_at(a_point)) > 1
 
     def compute_plates(self):
         # Add the global bottom plate
-        if self._bottom:
+        if self.has_bottom:
             holes = [ ]
             for id_edge, an_edge in enumerate(self.edges):
                 if id_edge >= 4: # Not the global border
@@ -697,39 +720,39 @@ class Edges:
             #       "MAX?:", self.is_attached_to_inside_edge(an_edge.max),
             #       "MULTIPLE MIN?:", self.is_meeting_multiple_edges(an_edge.min),
             #       "MAX?:", self.is_meeting_multiple_edges(an_edge.max))
-            if self.is_attached_to_inside_edge(an_edge.min):
+            if self.is_attached_to_inside_edge(an_edge.origin):
                 length += self.depth / 2
-            if self.is_attached_to_inside_edge(an_edge.max):
+            if self.is_attached_to_inside_edge(an_edge.dest):
                 length += self.depth / 2
 
             label = labels[id_edge] if id_edge in labels else "Inner Plate"
             if label != "Inner Plate": # The border plates
                 bottom_edge = PlateBorderType.crenelated_caving_in(start=self.depth) \
-                    if self._bottom else PlateBorderType.straight(start=self.depth)
+                    if self.has_bottom else PlateBorderType.straight(start=self.depth)
                 right_edge  = PlateBorderType.crenelated_protruding(start=self.depth) \
-                    if self._bottom else PlateBorderType.crenelated_protruding()
+                    if self.has_bottom else PlateBorderType.crenelated_protruding()
                 left_edge   = PlateBorderType.crenelated_caving_in(end=self.depth) \
-                    if self._bottom else PlateBorderType.crenelated_caving_in()
+                    if self.has_bottom else PlateBorderType.crenelated_caving_in()
                 top_edge    = PlateBorderType.straight(end=self.depth)
                 bts = [
                     bottom_edge, right_edge, top_edge, left_edge,
                 ]
             else: # The inner plates
-                if self.is_meeting_multiple_edges(an_edge.max):
+                if self.is_meeting_multiple_edges(an_edge.dest):
                     right_depth = self.depth / 2
                 else:
                     right_depth = self.depth
-                if self.is_meeting_multiple_edges(an_edge.min):
+                if self.is_meeting_multiple_edges(an_edge.origin):
                     left_depth = self.depth / 2
                 else:
                     left_depth = self.depth
                 bottom_edge = PlateBorderType.crenelated_caving_in(start=self.depth, end=self.depth) \
-                    if self._bottom else PlateBorderType.straight(start=self.depth, end=self.depth)
+                    if self.has_bottom else PlateBorderType.straight(start=self.depth, end=self.depth)
                 right_edge  = PlateBorderType.crenelated_caving_in(start=self.depth, depth=right_depth) \
-                    if self._bottom else PlateBorderType.crenelated_caving_in(start=0, depth=right_depth)
+                    if self.has_bottom else PlateBorderType.crenelated_caving_in(start=0, depth=right_depth)
                 top_edge    = PlateBorderType.straight(start=self.depth, end=self.depth)
                 left_edge   = PlateBorderType.crenelated_caving_in(end=self.depth, depth=left_depth) \
-                    if self._bottom else PlateBorderType.crenelated_caving_in(end=0, depth=left_depth)
+                    if self.has_bottom else PlateBorderType.crenelated_caving_in(end=0, depth=left_depth)
                 bts = [
                     bottom_edge, right_edge, top_edge, left_edge,
                 ]
@@ -792,15 +815,15 @@ if __name__ == '__main__':
     # tc6.add_edge(Edge(P(0,2),P(4,2)))
     # test_cases.append(tc6)
 
-    # # Rectangle with three separations meeting at the same width
-    # tc7 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=False)
-    # tc7.add_edge(Edge(P(0,4),P(10,4)))
-    # tc7.add_edge(Edge(P(7,0),P(7,4)))
-    # tc7.add_edge(Edge(P(7,10),P(7,4)))
-    # test_cases.append(tc7)
+    # Rectangle with three separations meeting at the same width
+    tc7 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=True)
+    tc7.add_edge(Edge(P(0,4),P(10,4)))
+    tc7.add_edge(Edge(P(7,0),P(7,4)))
+    tc7.add_edge(Edge(P(7,10),P(7,4)))
+    test_cases.append(tc7)
 
     # Rectangle with five separations meeting at the same height
-    tc8 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=False)
+    tc8 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=True)
     tc8.add_edge(Edge(P(4,0),P(4,10)))
     tc8.add_edge(Edge(P(6.5,0),P(6.5,10)))
     tc8.add_edge(Edge(P(6.5,2),P(10,2)))
