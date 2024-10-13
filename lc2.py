@@ -483,6 +483,7 @@ class Plate(BoundingBox):
         assert a_border.style == PlateBorderStyle.CRENELATED_PROTRUDING or \
             a_border.style == PlateBorderStyle.CRENELATED_CAVING_IN, \
             "dump_to_svg: invalid crenelation"
+        multiplicator = 1
         vector        = max.sub(min)
         direction     = vector.unit()
         perpendicular = direction.perp()
@@ -509,13 +510,16 @@ class Plate(BoundingBox):
             if length_done >= (1-precision)*length_todo and \
                a_border.style == PlateBorderStyle.CRENELATED_CAVING_IN:
                 break
-            # HERE DEPTH
             here_depth = a_border.type.depth if a_border.type.depth else a_border.depth
-            last_segment = perpendicular.mult(here_depth * (1 if is_upper else -1))
-            last_position = next_position.add(last_segment)
-            a_printer.print_segment(next_position, last_position)
-            position = last_position
-            is_upper = not(is_upper)
+            change_depth =  i % 4 == 3 or i % 4 == 2 # True # HALF PATCH
+            if change_depth:
+                last_segment = perpendicular.mult(here_depth * (1 if is_upper else -1))
+                last_position = next_position.add(last_segment)
+                a_printer.print_segment(next_position, last_position)
+                position = last_position
+                is_upper = not(is_upper)
+            else:
+                position = next_position
 
     def dump_segment_to_svg(self, a_printer, min, max, a_border, precision=0.01):
         a_printer.set_color("blue")
@@ -741,11 +745,13 @@ class Edges:
                 ]
             else: # The inner plates
                 if self.is_meeting_multiple_edges(an_edge.dest):
-                    right_depth = self.depth / 2
+                    # right_depth = self.depth / 2 # HALF PATCH
+                    right_depth = self.depth
                 else:
                     right_depth = self.depth
                 if self.is_meeting_multiple_edges(an_edge.origin):
-                    left_depth = self.depth / 2
+                    # left_depth = self.depth / 2 # HALF PATCH
+                    left_depth = self.depth
                 else:
                     left_depth = self.depth
                 bottom_edge = {
