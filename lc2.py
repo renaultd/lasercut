@@ -638,7 +638,7 @@ class Edges:
     def min_width(self):    return self._min_width
     @property
     def plates(self):
-        assert not(self._plates.is_empty()), "Edges : plates not computed"
+        assert not(self._plates.is_empty()), "Edges : plates not computed or empty"
         return self._plates
     @property
     def has_bottom(self):   return self._has_bottom
@@ -748,14 +748,23 @@ class Edges:
                     left_depth = self.depth / 2
                 else:
                     left_depth = self.depth
-                bottom_edge = PlateBorderType.crenelated_caving_in(start=self.depth, end=self.depth) \
-                    if self.has_bottom else PlateBorderType.straight(start=self.depth, end=self.depth)
+                bottom_edge = {
+                    (True, False):  PlateBorderType.crenelated_caving_in(start=self.depth, end=self.depth),
+                    (False, False): PlateBorderType.straight(start=self.depth, end=self.depth),
+                    (False, True):  PlateBorderType.straight(start=0 if self.is_attached_to_border(an_edge.origin) else self.depth,
+                                                             end=0 if self.is_attached_to_border(an_edge.dest) else self.depth),
+                }[self.has_bottom, not(self.has_edges)]
                 right_edge  = {
                     (True, False):  PlateBorderType.crenelated_caving_in(start=self.depth, depth=right_depth),
                     (False, False): PlateBorderType.crenelated_caving_in(start=0, depth=right_depth),
                     (False, True):  PlateBorderType.straight(),
                 }[self.has_bottom, not(self.has_edges) and self.is_attached_to_border(an_edge.dest)]
-                top_edge    = PlateBorderType.straight(start=self.depth, end=self.depth)
+                top_edge = {
+                    (True, False):  PlateBorderType.straight(start=self.depth, end=self.depth),
+                    (False, False): PlateBorderType.straight(start=self.depth, end=self.depth),
+                    (False, True):  PlateBorderType.straight(start=0 if self.is_attached_to_border(an_edge.dest) else self.depth,
+                                                             end=0 if self.is_attached_to_border(an_edge.origin) else self.depth),
+                }[self.has_bottom, not(self.has_edges)]
                 left_edge   = {
                     (True, False):  PlateBorderType.crenelated_caving_in(end=self.depth, depth=left_depth),
                     (False, False): PlateBorderType.crenelated_caving_in(end=0, depth=left_depth),
@@ -792,7 +801,7 @@ if __name__ == '__main__':
     # Test cases
 
     # # Only a rectangle
-    # tc1 = Edges(P(0,0), P(10,10), height=3, bottom=False, edges=False)
+    # tc1 = Edges(P(0,0), P(10,10), height=3, bottom=False, edges=True)
     # test_cases.append(tc1)
 
     # # Rectangle with horizontal inner separation
@@ -840,17 +849,17 @@ if __name__ == '__main__':
     # tc8.add_edge(Edge(P(0,2),P(4,2)))
     # test_cases.append(tc8)
 
-    # # Rectangle with eight separations creating a tic-tac-toe
-    tc9 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=False, edges=False)
-    tc9.add_edge(Edge(P(3,0),P(3,10)))
-    tc9.add_edge(Edge(P(6,0),P(6,10)))
-    tc9.add_edge(Edge(P(0,4),P(3,4)))
-    tc9.add_edge(Edge(P(3,4),P(6,4)))
-    tc9.add_edge(Edge(P(6,4),P(10,4)))
-    tc9.add_edge(Edge(P(0,7),P(3,7)))
-    tc9.add_edge(Edge(P(3,7),P(6,7)))
-    tc9.add_edge(Edge(P(6,7),P(10,7)))
-    test_cases.append(tc9)
+    # # # Rectangle with eight separations creating a tic-tac-toe
+    # tc9 = Edges(P(0,0), P(10,10), height=3, min_width=1, bottom=True, edges=True)
+    # tc9.add_edge(Edge(P(3,0),P(3,10)))
+    # tc9.add_edge(Edge(P(6,0),P(6,10)))
+    # tc9.add_edge(Edge(P(0,4),P(3,4)))
+    # tc9.add_edge(Edge(P(3,4),P(6,4)))
+    # tc9.add_edge(Edge(P(6,4),P(10,4)))
+    # tc9.add_edge(Edge(P(0,7),P(3,7)))
+    # tc9.add_edge(Edge(P(3,7),P(6,7)))
+    # tc9.add_edge(Edge(P(6,7),P(10,7)))
+    # test_cases.append(tc9)
 
     ########################################################
     # Tests
@@ -863,6 +872,21 @@ if __name__ == '__main__':
         tc.debug_plates()
         tc.dump_profile_to_svg("profile.svg")
         tc.dump_plates_to_svg("plates.svg")
+
+    # Tea box
+    teabox = Edges(P(0,0), P(28.2,18.3), height=7.5, min_width=0.6, bottom=False, edges=False)
+    teabox.add_edge(Edge(P(0,6.1),P(28.2,6.1)))
+    teabox.add_edge(Edge(P(0,12.2),P(28.2,12.2)))
+    for x in [ 7.05, 14.1, 21.15 ]:
+        teabox.add_edge(Edge(P(x,0),P(x,6.1)))
+        teabox.add_edge(Edge(P(x,6.1),P(x,12.2)))
+        teabox.add_edge(Edge(P(x,12.2),P(x,18.3)))
+    teabox.debug_edges()
+    teabox.compute_plates()
+    teabox.debug_plates()
+    teabox.dump_profile_to_svg("profile.svg")
+    teabox.dump_plates_to_svg("plates.svg")
+
 
 ################################################################
 # Test usage :
